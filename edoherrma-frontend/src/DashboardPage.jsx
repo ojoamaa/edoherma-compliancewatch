@@ -1,0 +1,889 @@
+import React, { useEffect, useMemo, useState } from "react";
+
+const API_BASE = "http://127.0.0.1:8000/api";
+
+const theme = {
+    bg: "#F3F6FB",
+    card: "#FFFFFF",
+    border: "#E5E7EB",
+    text: "#0F172A",
+    muted: "#64748B",
+    primary: "#1D4ED8",
+    primaryHover: "#1E40AF",
+    successBg: "#DCFCE7",
+    successText: "#166534",
+    warningBg: "#FEF3C7",
+    warningText: "#92400E",
+    dangerBg: "#FEE2E2",
+    dangerText: "#991B1B",
+};
+
+const cardStyle = {
+    background: theme.card,
+    border: `1px solid ${theme.border}`,
+    borderRadius: 20,
+    padding: 24,
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.05)",
+};
+
+function MetricCard({ title, value }) {
+    return (
+        <div style={styles.metricCard}>
+            <div style={styles.metricTitle}>{title}</div>
+            <div style={styles.metricValue}>{value}</div>
+        </div>
+    );
+}
+
+function MiniBar({ label, value, total }) {
+    const width =
+        total > 0 ? `${Math.max((value / total) * 100, value > 0 ? 8 : 0)}%` : "0%";
+
+    return (
+        <div style={styles.miniBarWrap}>
+            <div style={styles.miniBarHeader}>
+                <span>{label}</span>
+                <span style={styles.miniBarValue}>{value}</span>
+            </div>
+            <div style={styles.miniBarTrack}>
+                <div style={{ ...styles.miniBarFill, width }} />
+            </div>
+        </div>
+    );
+}
+
+function StatusBadge({ value }) {
+    const style = {
+        padding: "6px 12px",
+        borderRadius: "999px",
+        fontSize: "12px",
+        fontWeight: 700,
+        display: "inline-block",
+        whiteSpace: "nowrap",
+    };
+
+    if (value === "Active") {
+        style.background = theme.successBg;
+        style.color = theme.successText;
+    } else if (value === "Expired") {
+        style.background = theme.dangerBg;
+        style.color = theme.dangerText;
+    } else {
+        style.background = theme.warningBg;
+        style.color = theme.warningText;
+    }
+
+    return <span style={style}>{value}</span>;
+}
+
+function SectionTable({ title, columns, rows, emptyMessage }) {
+    return (
+        <div style={styles.sectionCard}>
+            <div style={styles.sectionHeader}>
+                <h3 style={styles.sectionTitle}>{title}</h3>
+            </div>
+
+            <div style={styles.tableWrap}>
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
+                            {columns.map((col) => (
+                                <th key={col} style={styles.th}>
+                                    {col}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.length === 0 ? (
+                            <tr>
+                                <td colSpan={columns.length} style={styles.emptyCell}>
+                                    {emptyMessage}
+                                </td>
+                            </tr>
+                        ) : (
+                            rows.map((row, rowIdx) => (
+                                <tr key={rowIdx}>
+                                    {row.map((cell, cellIdx) => (
+                                        <td key={cellIdx} style={styles.td}>
+                                            {cell}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+export default function DashboardPage({ token, admin, onLogout }) {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const [search, setSearch] = useState("");
+    const [appliedSearch, setAppliedSearch] = useState("");
+    const [personnelFilter, setPersonnelFilter] = useState("all");
+    const [facilityFilter, setFacilityFilter] = useState("all");
+
+    const loadDashboard = async () => {
+        if (!token) {
+            setError("Missing admin token.");
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const response = await fetch(`${API_BASE}/dashboard/overview`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Dashboard request failed with status ${response.status}`);
+            }
+
+            const json = await response.json();
+            setData(json);
+        } catch (err) {
+            setError(err?.message || "Unable to load dashboard data.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadDashboard();
+    }, [token]);
+
+    const searchLower = appliedSearch.trim().toLowerCase();
+
+    const professionOptions = useMemo(() => {
+        if (!data?.all_personnel) return [];
+        return Array.from(new Set(data.all_personnel.map((item) => item.profession))).sort();
+    }, [data]);
+
+    const lgaOptions = useMemo(() => {
+        if (!data?.all_facilities) return [];
+        return Array.from(new Set(data.all_facilities.map((item) => item.lga))).sort();
+    }, [data]);
+
+    const filterPersonnel = (items = []) =>
+        items.filter((item) => {
+            const matchesSearch =
+                !searchLower ||
+                item.full_name?.toLowerCase().includes(searchLower) ||
+                item.profession?.toLowerCase().includes(searchLower) ||
+                item.license_number?.toLowerCase().includes(searchLower);
+
+            const matchesFilter =
+                personnelFilter === "all" ||
+                item.profession?.toLowerCase() === personnelFilter.toLowerCase();
+
+            return matchesSearch && matchesFilter;
+        });
+
+    const filterFacilities = (items = []) =>
+        items.filter((item) => {
+            const matchesSearch =
+                !searchLower ||
+                item.facility_name?.toLowerCase().includes(searchLower) ||
+                item.facility_type?.toLowerCase().includes(searchLower) ||
+                item.lga?.toLowerCase().includes(searchLower) ||
+                item.license_number?.toLowerCase().includes(searchLower);
+
+            const matchesFilter =
+                facilityFilter === "all" ||
+                item.lga?.toLowerCase() === facilityFilter.toLowerCase();
+
+            return matchesSearch && matchesFilter;
+        });
+
+    const allFilteredPersonnel = useMemo(
+        () => filterPersonnel(data?.all_personnel || []),
+        [data, appliedSearch, personnelFilter]
+    );
+
+    const allFilteredFacilities = useMemo(
+        () => filterFacilities(data?.all_facilities || []),
+        [data, appliedSearch, facilityFilter]
+    );
+
+    const expiredPersonnel = useMemo(
+        () => filterPersonnel(data?.expired_personnel || []),
+        [data, appliedSearch, personnelFilter]
+    );
+
+    const expiringPersonnel = useMemo(
+        () => filterPersonnel(data?.expiring_personnel || []),
+        [data, appliedSearch, personnelFilter]
+    );
+
+    const expiredFacilities = useMemo(
+        () => filterFacilities(data?.expired_facilities || []),
+        [data, appliedSearch, facilityFilter]
+    );
+
+    const expiringFacilities = useMemo(
+        () => filterFacilities(data?.expiring_facilities || []),
+        [data, appliedSearch, facilityFilter]
+    );
+
+    const exportCsv = (filename, headers, rows) => {
+        const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+        const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const exportJson = () => {
+        if (!data) return;
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "edohherma-dashboard-overview.json");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const personnelRows = allFilteredPersonnel.map((item) => [
+        item.full_name,
+        item.profession,
+        item.license_number,
+        item.license_expiry_date,
+        <StatusBadge value={item.status} />,
+    ]);
+
+    const facilityRows = allFilteredFacilities.map((item) => [
+        item.facility_name,
+        item.facility_type,
+        item.lga,
+        item.license_number,
+        item.license_expiry_date,
+        <StatusBadge value={item.status} />,
+    ]);
+
+    const expiredPersonnelRows = expiredPersonnel.map((item) => [
+        item.full_name,
+        item.profession,
+        item.license_number,
+        item.license_expiry_date,
+        <StatusBadge value={item.status} />,
+    ]);
+
+    const expiringPersonnelRows = expiringPersonnel.map((item) => [
+        item.full_name,
+        item.profession,
+        item.license_number,
+        item.license_expiry_date,
+        <StatusBadge value={item.status} />,
+    ]);
+
+    const expiredFacilityRows = expiredFacilities.map((item) => [
+        item.facility_name,
+        item.facility_type,
+        item.lga,
+        item.license_number,
+        item.license_expiry_date,
+        <StatusBadge value={item.status} />,
+    ]);
+
+    const expiringFacilityRows = expiringFacilities.map((item) => [
+        item.facility_name,
+        item.facility_type,
+        item.lga,
+        item.license_number,
+        item.license_expiry_date,
+        <StatusBadge value={item.status} />,
+    ]);
+
+    if (loading) {
+        return (
+            <div style={styles.page}>
+                <div style={styles.container}>
+                    <div style={styles.infoBox}>Loading admin dashboard...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={styles.page}>
+                <div style={styles.container}>
+                    <div style={styles.errorBox}>{error}</div>
+                </div>
+            </div>
+        );
+    }
+
+    const summary = data?.summary || {
+        total_facilities: 0,
+        active_facilities: 0,
+        expired_facilities: 0,
+        expiring_facilities: 0,
+        total_personnel: 0,
+        active_personnel: 0,
+        expired_personnel: 0,
+        expiring_personnel: 0,
+    };
+
+    return (
+        <div style={styles.page}>
+            <div style={styles.container}>
+                <div style={styles.heroCard}>
+                    <div style={styles.heroTop}>
+                        <div>
+                            <div style={styles.pill}>Admin Dashboard</div>
+                            <h1 style={styles.title}>EdoHERMA ComplianceWatch</h1>
+                            <p style={styles.subtitle}>
+                                Welcome, {admin?.full_name || "Administrator"}.
+                            </p>
+                        </div>
+
+                        <div style={styles.headerButtons}>
+                            <button style={styles.secondaryButton} onClick={exportJson}>
+                                Export JSON
+                            </button>
+                            <button style={styles.secondaryButton} onClick={onLogout}>
+                                Logout
+                            </button>
+                            <button style={styles.primaryButton} onClick={loadDashboard}>
+                                Refresh Dashboard
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={styles.filterGrid}>
+                        <div style={styles.filterColWide}>
+                            <label style={styles.label}>Search records</label>
+                            <input
+                                style={styles.input}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") setAppliedSearch(search);
+                                }}
+                                placeholder="Search by name, profession, facility, license number, or LGA"
+                            />
+                        </div>
+
+                        <div>
+                            <label style={styles.label}>Personnel filter</label>
+                            <select
+                                style={styles.input}
+                                value={personnelFilter}
+                                onChange={(e) => setPersonnelFilter(e.target.value)}
+                            >
+                                <option value="all">All Professions</option>
+                                {professionOptions.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={styles.label}>Facility filter</label>
+                            <select
+                                style={styles.input}
+                                value={facilityFilter}
+                                onChange={(e) => setFacilityFilter(e.target.value)}
+                            >
+                                <option value="all">All LGAs</option>
+                                {lgaOptions.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div style={styles.actionCol}>
+                            <button
+                                style={styles.primaryButton}
+                                onClick={() => setAppliedSearch(search)}
+                            >
+                                Search
+                            </button>
+                            <button
+                                style={styles.secondaryButton}
+                                onClick={() => {
+                                    setSearch("");
+                                    setAppliedSearch("");
+                                    setPersonnelFilter("all");
+                                    setFacilityFilter("all");
+                                }}
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={styles.metricsGrid}>
+                    <MetricCard title="Total Facilities" value={summary.total_facilities} />
+                    <MetricCard title="Active Facilities" value={summary.active_facilities} />
+                    <MetricCard title="Expired Facilities" value={summary.expired_facilities} />
+                    <MetricCard title="Expiring Facilities" value={summary.expiring_facilities} />
+                </div>
+
+                <div style={styles.metricsGrid}>
+                    <MetricCard title="Total Personnel" value={summary.total_personnel} />
+                    <MetricCard title="Active Personnel" value={summary.active_personnel} />
+                    <MetricCard title="Expired Personnel" value={summary.expired_personnel} />
+                    <MetricCard title="Expiring Personnel" value={summary.expiring_personnel} />
+                </div>
+
+                <div style={styles.twoColGrid}>
+                    <div style={styles.sectionCard}>
+                        <div style={styles.sectionHeader}>
+                            <h3 style={styles.sectionTitle}>Compliance Snapshot</h3>
+                        </div>
+
+                        <MiniBar
+                            label="Active Facilities"
+                            value={summary.active_facilities}
+                            total={summary.total_facilities}
+                        />
+                        <MiniBar
+                            label="Expired Facilities"
+                            value={summary.expired_facilities}
+                            total={summary.total_facilities}
+                        />
+                        <MiniBar
+                            label="Active Personnel"
+                            value={summary.active_personnel}
+                            total={summary.total_personnel}
+                        />
+                        <MiniBar
+                            label="Expired Personnel"
+                            value={summary.expired_personnel}
+                            total={summary.total_personnel}
+                        />
+                    </div>
+
+                    <div style={styles.sectionCard}>
+                        <div style={styles.sectionHeader}>
+                            <h3 style={styles.sectionTitle}>Quick Exports</h3>
+                        </div>
+
+                        <div style={styles.exportGrid}>
+                            <button
+                                style={styles.exportButton}
+                                onClick={() =>
+                                    exportCsv(
+                                        "expired-personnel.csv",
+                                        ["Name", "Profession", "License No.", "Expiry Date", "Status"],
+                                        expiredPersonnel.map((x) => [
+                                            x.full_name,
+                                            x.profession,
+                                            x.license_number,
+                                            x.license_expiry_date,
+                                            x.status,
+                                        ])
+                                    )
+                                }
+                            >
+                                Export Expired Personnel
+                            </button>
+
+                            <button
+                                style={styles.exportButton}
+                                onClick={() =>
+                                    exportCsv(
+                                        "expiring-personnel.csv",
+                                        ["Name", "Profession", "License No.", "Expiry Date", "Status"],
+                                        expiringPersonnel.map((x) => [
+                                            x.full_name,
+                                            x.profession,
+                                            x.license_number,
+                                            x.license_expiry_date,
+                                            x.status,
+                                        ])
+                                    )
+                                }
+                            >
+                                Export Expiring Personnel
+                            </button>
+
+                            <button
+                                style={styles.exportButton}
+                                onClick={() =>
+                                    exportCsv(
+                                        "expired-facilities.csv",
+                                        ["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"],
+                                        expiredFacilities.map((x) => [
+                                            x.facility_name,
+                                            x.facility_type,
+                                            x.lga,
+                                            x.license_number,
+                                            x.license_expiry_date,
+                                            x.status,
+                                        ])
+                                    )
+                                }
+                            >
+                                Export Expired Facilities
+                            </button>
+
+                            <button
+                                style={styles.exportButton}
+                                onClick={() =>
+                                    exportCsv(
+                                        "expiring-facilities.csv",
+                                        ["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"],
+                                        expiringFacilities.map((x) => [
+                                            x.facility_name,
+                                            x.facility_type,
+                                            x.lga,
+                                            x.license_number,
+                                            x.license_expiry_date,
+                                            x.status,
+                                        ])
+                                    )
+                                }
+                            >
+                                Export Expiring Facilities
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={styles.tablesGrid}>
+                    <SectionTable
+                        title="All Personnel Search Results"
+                        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
+                        rows={personnelRows}
+                        emptyMessage="No personnel matched the current search or filter."
+                    />
+
+                    <SectionTable
+                        title="All Facilities Search Results"
+                        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
+                        rows={facilityRows}
+                        emptyMessage="No facilities matched the current search or filter."
+                    />
+
+                    <SectionTable
+                        title="Expired Personnel"
+                        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
+                        rows={expiredPersonnelRows}
+                        emptyMessage="No expired personnel records found."
+                    />
+
+                    <SectionTable
+                        title="Expiring Personnel"
+                        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
+                        rows={expiringPersonnelRows}
+                        emptyMessage="No personnel licenses are nearing expiry."
+                    />
+
+                    <SectionTable
+                        title="Expired Facilities"
+                        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
+                        rows={expiredFacilityRows}
+                        emptyMessage="No expired facilities found."
+                    />
+
+                    <SectionTable
+                        title="Expiring Facilities"
+                        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
+                        rows={expiringFacilityRows}
+                        emptyMessage="No facilities are nearing expiry."
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+const styles = {
+    page: {
+        minHeight: "100vh",
+        background: theme.bg,
+        padding: "20px",
+        fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
+        color: theme.text,
+    },
+    container: {
+        maxWidth: "1400px",
+        margin: "0 auto",
+    },
+    heroCard: {
+        ...cardStyle,
+        marginBottom: 18,
+        padding: 24,
+    },
+    heroTop: {
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "16px",
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+        marginBottom: "20px",
+    },
+    pill: {
+        display: "inline-block",
+        padding: "6px 12px",
+        borderRadius: "999px",
+        background: "#DBEAFE",
+        color: theme.primary,
+        fontSize: "12px",
+        fontWeight: 700,
+        marginBottom: "10px",
+    },
+    title: {
+        margin: 0,
+        fontSize: "46px",
+        lineHeight: 1.05,
+        fontWeight: 800,
+        color: theme.text,
+        letterSpacing: "-1px",
+    },
+    subtitle: {
+        margin: "10px 0 0",
+        fontSize: "17px",
+        color: theme.muted,
+        lineHeight: 1.45,
+    },
+    headerButtons: {
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+    },
+    primaryButton: {
+        minWidth: "140px",
+        height: "44px",
+        background: theme.primary,
+        color: "#fff",
+        border: "none",
+        padding: "0 16px",
+        borderRadius: "12px",
+        cursor: "pointer",
+        fontWeight: 700,
+        fontSize: "14px",
+    },
+    secondaryButton: {
+        minWidth: "120px",
+        height: "44px",
+        background: "#fff",
+        color: theme.text,
+        border: `1px solid ${theme.border}`,
+        padding: "0 16px",
+        borderRadius: "12px",
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: "14px",
+    },
+    filterGrid: {
+        display: "grid",
+        gridTemplateColumns: "2fr 1fr 1fr auto",
+        gap: "14px",
+        alignItems: "end",
+    },
+    filterColWide: {
+        minWidth: 0,
+    },
+    actionCol: {
+        display: "flex",
+        gap: "10px",
+        flexWrap: "wrap",
+        alignItems: "end",
+    },
+    label: {
+        display: "block",
+        marginBottom: "8px",
+        color: theme.muted,
+        fontSize: "13px",
+        fontWeight: 700,
+    },
+    input: {
+        width: "100%",
+        padding: "12px 14px",
+        borderRadius: "12px",
+        border: `1px solid ${theme.border}`,
+        fontSize: "14px",
+        background: "#fff",
+        color: theme.text,
+        outline: "none",
+        boxSizing: "border-box",
+    },
+    metricsGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        gap: "14px",
+        marginBottom: "14px",
+    },
+    metricCard: {
+        ...cardStyle,
+        minHeight: "118px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "20px",
+    },
+    metricTitle: {
+        color: theme.muted,
+        fontSize: "14px",
+        fontWeight: 600,
+        marginBottom: "10px",
+    },
+    metricValue: {
+        color: theme.text,
+        fontSize: "40px",
+        fontWeight: 800,
+        lineHeight: 1,
+    },
+    twoColGrid: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "16px",
+        marginBottom: "16px",
+    },
+    sectionCard: {
+        ...cardStyle,
+        padding: "22px",
+    },
+    sectionHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "12px",
+        alignItems: "center",
+        flexWrap: "wrap",
+        marginBottom: "14px",
+    },
+    sectionTitle: {
+        margin: 0,
+        fontSize: "24px",
+        fontWeight: 800,
+        color: theme.text,
+    },
+    miniBarWrap: {
+        marginBottom: "14px",
+    },
+    miniBarHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "12px",
+        marginBottom: "6px",
+        color: theme.muted,
+        fontSize: "14px",
+    },
+    miniBarValue: {
+        color: theme.text,
+        fontWeight: 700,
+    },
+    miniBarTrack: {
+        width: "100%",
+        height: "10px",
+        borderRadius: "999px",
+        background: "#E2E8F0",
+        overflow: "hidden",
+    },
+    miniBarFill: {
+        height: "100%",
+        borderRadius: "999px",
+        background: theme.primary,
+        transition: "width 0.3s ease",
+    },
+    exportGrid: {
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "12px",
+    },
+    exportButton: {
+        background: "#fff",
+        border: `1px solid ${theme.border}`,
+        color: theme.text,
+        borderRadius: "12px",
+        padding: "14px 16px",
+        textAlign: "left",
+        cursor: "pointer",
+        fontWeight: 600,
+        fontSize: "14px",
+        minHeight: "48px",
+    },
+    tablesGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(520px, 1fr))",
+        gap: "16px",
+    },
+    tableWrap: {
+        overflowX: "auto",
+        maxHeight: 360,
+        overflowY: "auto",
+        borderRadius: "12px",
+    },
+    table: {
+        width: "100%",
+        minWidth: "500px",
+        borderCollapse: "collapse",
+    },
+    th: {
+        position: "sticky",
+        top: 0,
+        background: "#fff",
+        textAlign: "left",
+        padding: "12px 10px",
+        color: theme.muted,
+        fontWeight: 700,
+        fontSize: "13px",
+        borderBottom: `1px solid ${theme.border}`,
+        zIndex: 1,
+    },
+    td: {
+        padding: "12px 10px",
+        color: "#334155",
+        fontSize: "14px",
+        borderBottom: "1px solid #F1F5F9",
+        verticalAlign: "top",
+    },
+    emptyCell: {
+        padding: "24px 10px",
+        color: "#94A3B8",
+        textAlign: "center",
+    },
+    infoBox: {
+        ...cardStyle,
+        maxWidth: "700px",
+        margin: "60px auto",
+        textAlign: "center",
+        fontSize: "18px",
+        fontWeight: 600,
+        color: "#334155",
+    },
+    errorBox: {
+        maxWidth: "700px",
+        margin: "60px auto",
+        background: "#FFF1F2",
+        border: "1px solid #FECDD3",
+        borderRadius: "20px",
+        padding: "28px",
+        textAlign: "center",
+        boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+        fontSize: "18px",
+        fontWeight: 600,
+        color: "#9F1239",
+    },
+};
