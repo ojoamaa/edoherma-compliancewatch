@@ -4,35 +4,22 @@ __pycache__/
 *.pyo
 *.pyd
 *.sqlite3
+*.db
 
 # Virtual environments
 venv/
-
-# Environment files
 .env
 .env.*
 
-# IDE
+# VS Code / Visual Studio
 .vscode/
-.idea/
+.vs/
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Node / frontend
+# Node
 node_modules/
 dist/
 build/
 
-# Coverage / test artifacts
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Local exports
-*.csv
-*.json
+# OS files
+.DS_Store
+Thumbs.db
