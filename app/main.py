@@ -8,7 +8,6 @@ from app.core.init_admin import create_default_admin
 
 import app.models  # noqa
 
-
 app = FastAPI(
     title="EdoHERMA ComplianceWatch",
     version="1.0.0",
@@ -19,7 +18,7 @@ origins = [
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
-    "https://edohherrma-frontend-ceq0oepy0.vercel.app",
+    "https://edohherma-frontend-ceq0oepy0.vercel.app",
 ]
 
 app.add_middleware(
@@ -46,7 +45,6 @@ app.include_router(compliance.router, prefix="/api/compliance", tags=["Complianc
 app.include_router(dev.router, prefix="/api/dev", tags=["Development"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["Admin Auth"])
 app.include_router(personnel_auth.router, prefix="/api/personnel", tags=["Personnel Auth"])
-
 
 @app.get("/")
 def root():
