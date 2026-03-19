@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 
-const API_BASE =
-    import.meta.env.VITE_API_BASE || "https://edohherrma-compliancewatch.onrender.com";
-
+const API_BASE = "https://edohherrma-compliancewatch.onrender.com";
 export default function LoginPage({ onLoginSuccess }) {
     const [loginType, setLoginType] = useState("admin");
     const [email, setEmail] = useState("admin@edohherma.com");
@@ -65,21 +63,11 @@ export default function LoginPage({ onLoginSuccess }) {
             const loginData = JSON.parse(loginText);
             const accessToken = loginData.access_token;
 
-            const meResponse = await fetch(`${API_BASE}${meEndpoint}`, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-
-            const meText = await meResponse.text();
-
-            if (!meResponse.ok) {
-                throw new Error(meText || "Failed to load profile");
-            }
-
-            const profile = JSON.parse(meText);
-
-            onLoginSuccess(accessToken, profile, loginType);
+            onLoginSuccess(
+                accessToken,
+                { email: email.trim(), role: loginType },
+                loginType
+            );
         } catch (err) {
             console.error("Login error:", err);
             setError(err.message || "Unable to sign in");
