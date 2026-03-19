@@ -5,7 +5,7 @@ import PersonnelPage from "./PersonnelPage";
 
 const TOKEN_KEY = "edohherma_token";
 const USER_TYPE_KEY = "edohherma_user_type";
-const API_BASE = "https://edohherrma-compliancewatch.onrender.com";
+const API_BASE = "http://127.0.0.1:8000";
 export default function App() {
     const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || "");
     const [userType, setUserType] = useState(localStorage.getItem(USER_TYPE_KEY) || "");
