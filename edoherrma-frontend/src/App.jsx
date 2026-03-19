@@ -5,7 +5,7 @@ import PersonnelPage from "./PersonnelPage";
 
 const TOKEN_KEY = "edohherma_token";
 const USER_TYPE_KEY = "edohherma_user_type";
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://edohherrma-compliancewatch.onrender.com";
 
 export default function App() {
     const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || "");
@@ -36,24 +36,24 @@ export default function App() {
                 });
 
                 if (!response.ok) {
-                    throw new Error("Invalid token");
+                    throw new Error(`Invalid token for ${userType}`);
                 }
 
                 const data = await response.json();
 
                 if (!cancelled) {
                     setProfile(data);
+                    setCheckingAuth(false);
                 }
             } catch (error) {
+                console.error("Session verification failed:", error);
+
                 if (!cancelled) {
                     localStorage.removeItem(TOKEN_KEY);
                     localStorage.removeItem(USER_TYPE_KEY);
                     setToken("");
                     setUserType("");
                     setProfile(null);
-                }
-            } finally {
-                if (!cancelled) {
                     setCheckingAuth(false);
                 }
             }

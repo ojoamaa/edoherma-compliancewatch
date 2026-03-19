@@ -14,14 +14,18 @@ app = FastAPI(
     version="1.0.0",
 )
 
+origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "https://edohherrma-frontend.vercel.app",
+    "https://edohherrma-frontend-mprou7w1.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +47,7 @@ app.include_router(compliance.router, prefix="/api/compliance", tags=["Complianc
 app.include_router(dev.router, prefix="/api/dev", tags=["Development"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["Admin Auth"])
 app.include_router(personnel_auth.router, prefix="/api/personnel", tags=["Personnel Auth"])
+
 
 @app.get("/")
 def root():
