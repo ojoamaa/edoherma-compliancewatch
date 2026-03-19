@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
 export default function LoginPage({ onLoginSuccess }) {
     const [loginType, setLoginType] = useState("admin");
     const [email, setEmail] = useState("admin@edohherma.com");
