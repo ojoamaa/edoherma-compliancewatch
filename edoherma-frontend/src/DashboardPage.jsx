@@ -140,7 +140,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         setError("");
 
         try {
-            const response = await fetch(`${API_BASE}/dashboard/overview`, {
+            const response = await fetch(`${API_BASE}/api/dashboard/overview`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
