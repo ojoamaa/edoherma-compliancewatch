@@ -3,19 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.api import (
-    health,
-    facilities,
-    personnel,
+    admin_auth,
     compliance,
     dashboard,
     dev,
-    admin_auth,
+    facilities,
+    health,
+    personnel,
     personnel_auth,
 )
 from app.core.database import Base, SessionLocal, engine
 from app.core.init_admin import create_default_admin
 
-import app.models  # noqa
+import app.models  # noqa: F401
 
 
 app = FastAPI(
@@ -23,19 +23,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "https://edohherma-frontend.vercel.app",
-    "https://edohherma-frontend-ceq0oepy0.vercel.app",
-    "https://edohherma-frontend-ui9xn0sbe.vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "https://edoherma-compliancewatch.vercel.app",
+    ],
+    allow_origin_regex=r"https://edoherma-compliancewatch-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
