@@ -1,12 +1,61 @@
 import React, { useState } from "react";
 
 const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
+
+const DEFAULT_ADMIN = {
+    email: "admin@edoherma.com",
+    password: "Admin@12345",
+};
+
+const DEFAULT_PERSONNEL = {
+    email: "osagie@edoherma.com",
+    password: "Password123!",
+};
+
 export default function LoginPage({ onLoginSuccess }) {
     const [loginType, setLoginType] = useState("admin");
-    const [email, setEmail] = useState("admin@edohherma.com");
-    const [password, setPassword] = useState("Admin@12345");
+    const [email, setEmail] = useState(DEFAULT_ADMIN.email);
+    const [password, setPassword] = useState(DEFAULT_ADMIN.password);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    function switchToAdmin() {
+        setLoginType("admin");
+        setEmail(DEFAULT_ADMIN.email);
+        setPassword(DEFAULT_ADMIN.password);
+        setError("");
+    }
+
+    function switchToPersonnel() {
+        setLoginType("personnel");
+        setEmail(DEFAULT_PERSONNEL.email);
+        setPassword(DEFAULT_PERSONNEL.password);
+        setError("");
+    }
+
+    async function parseErrorResponse(response) {
+        const text = await response.text();
+
+        if (!text) {
+            return "Request failed";
+        }
+
+        try {
+            const data = JSON.parse(text);
+            if (typeof data.detail === "string") {
+                return data.detail;
+            }
+            if (Array.isArray(data.detail)) {
+                return JSON.stringify(data.detail, null, 2);
+            }
+            if (typeof data.message === "string") {
+                return data.message;
+            }
+            return text;
+        } catch {
+            return text;
+        }
+    }
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -17,32 +66,26 @@ export default function LoginPage({ onLoginSuccess }) {
 
         try {
             let loginEndpoint = "";
-            let meEndpoint = "";
+            let loginOptions = {};
 
             if (loginType === "admin") {
                 loginEndpoint = "/api/admin/login";
-                meEndpoint = "/api/admin/me";
-            } else {
-                loginEndpoint = "/api/personnel/login";
-                meEndpoint = "/api/personnel/me";
-            }
 
-            let loginResponse;
-
-            if (loginType === "admin") {
                 const formData = new URLSearchParams();
                 formData.append("username", email.trim());
                 formData.append("password", password);
 
-                loginResponse = await fetch(`${API_BASE}${loginEndpoint}`, {
+                loginOptions = {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded",
                     },
                     body: formData.toString(),
-                });
+                };
             } else {
-                loginResponse = await fetch(`${API_BASE}${loginEndpoint}`, {
+                loginEndpoint = "/api/personnel/login";
+
+                loginOptions = {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -51,26 +94,34 @@ export default function LoginPage({ onLoginSuccess }) {
                         email: email.trim(),
                         password,
                     }),
-                });
+                };
             }
 
-            const loginText = await loginResponse.text();
+            const loginResponse = await fetch(`${API_BASE}${loginEndpoint}`, loginOptions);
 
             if (!loginResponse.ok) {
-                throw new Error(loginText || "Login failed");
+                const message = await parseErrorResponse(loginResponse);
+                throw new Error(message || "Login failed");
             }
 
-            const loginData = JSON.parse(loginText);
+            const loginData = await loginResponse.json();
             const accessToken = loginData.access_token;
+
+            if (!accessToken) {
+                throw new Error("No access token returned from server");
+            }
 
             onLoginSuccess(
                 accessToken,
-                { email: email.trim(), role: loginType },
+                {
+                    email: email.trim(),
+                    role: loginType,
+                },
                 loginType
             );
         } catch (err) {
             console.error("Login error:", err);
-            setError(err.message || "Unable to sign in");
+            setError(err?.message || "Unable to sign in");
         } finally {
             setLoading(false);
         }
@@ -84,12 +135,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 <div style={styles.switchWrap}>
                     <button
                         type="button"
-                        onClick={() => {
-                            setLoginType("admin");
-                            setEmail("admin@edohherma.com");
-                            setPassword("Admin@12345");
-                            setError("");
-                        }}
+                        onClick={switchToAdmin}
                         style={{
                             ...styles.switchButton,
                             ...(isAdmin ? styles.switchButtonActive : {}),
@@ -100,12 +146,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
                     <button
                         type="button"
-                        onClick={() => {
-                            setLoginType("personnel");
-                            setEmail("user@example.com");
-                            setPassword("password123");
-                            setError("");
-                        }}
+                        onClick={switchToPersonnel}
                         style={{
                             ...styles.switchButton,
                             ...(!isAdmin ? styles.switchButtonActive : {}),
@@ -130,6 +171,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 <label style={styles.label}>Email</label>
                 <input
                     style={styles.input}
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoComplete="username"

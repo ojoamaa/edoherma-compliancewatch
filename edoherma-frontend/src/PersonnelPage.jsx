@@ -41,15 +41,36 @@ export default function PersonnelPage({ personnel, onLogout }) {
                             {personnel?.is_active ? "Active" : "Inactive"}
                         </div>
                     </div>
-                </div>
 
-                <div style={styles.noteBox}>
-                    <strong>Next step</strong>
-                    <p style={styles.noteText}>
-                        Personnel login is now working. This page is the starting point
-                        for the personnel dashboard. Next, we can expand it to show
-                        facility name, LGA, license number, expiry date, and compliance status.
-                    </p>
+                    <div style={styles.infoCard}>
+                        <div style={styles.label}>License Number</div>
+                        <div style={styles.value}>{personnel?.license_number || "-"}</div>
+                    </div>
+
+                    <div style={styles.infoCard}>
+                        <div style={styles.label}>Regulatory Body</div>
+                        <div style={styles.value}>{personnel?.regulatory_body || "-"}</div>
+                    </div>
+
+                    <div style={styles.infoCard}>
+                        <div style={styles.label}>Facility Name</div>
+                        <div style={styles.value}>{personnel?.facility_name || "-"}</div>
+                    </div>
+
+                    <div style={styles.infoCard}>
+                        <div style={styles.label}>LGA</div>
+                        <div style={styles.value}>{personnel?.lga || "-"}</div>
+                    </div>
+
+                    <div style={styles.infoCard}>
+                        <div style={styles.label}>License Status</div>
+                        <div style={styles.value}>{personnel?.status || "-"}</div>
+                    </div>
+
+                    <div style={styles.infoCard}>
+                        <div style={styles.label}>Created At</div>
+                        <div style={styles.value}>{personnel?.created_at || "-"}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -132,16 +153,6 @@ const styles = {
         fontSize: 18,
         fontWeight: 700,
         color: "#0F172A",
-    },
-    noteBox: {
-        border: "1px solid #E5E7EB",
-        borderRadius: 18,
-        padding: 20,
-        background: "#FFFFFF",
-    },
-    noteText: {
-        marginTop: 10,
-        color: "#475569",
-        lineHeight: 1.7,
+        wordBreak: "break-word",
     },
 };

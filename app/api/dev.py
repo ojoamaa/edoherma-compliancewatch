@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.utils import get_license_status
+from app.core.security import get_password_hash
 from app.models.facility import Facility
 from app.models.personnel import Personnel
 
@@ -21,7 +22,7 @@ def seed_demo_data(db: Session = Depends(get_db)):
         return {
             "message": "Database already has records. Seed skipped.",
             "facilities": existing_facilities,
-            "personnel": existing_personnel
+            "personnel": existing_personnel,
         }
 
     facilities_data = [
@@ -51,7 +52,7 @@ def seed_demo_data(db: Session = Depends(get_db)):
             "license_number": "EDO-LAB-1003",
             "license_issue_date": date(2023, 1, 1),
             "license_expiry_date": date(2024, 1, 15),
-        }
+        },
     ]
 
     created_facilities = []
@@ -77,45 +78,57 @@ def seed_demo_data(db: Session = Depends(get_db)):
         db.refresh(facility)
 
     personnel_data = [
-        {
-            "full_name": "Dr. Osagie Ehimare",
-            "profession": "Doctor",
-            "license_number": "MDCN-1001",
-            "regulatory_body": "MDCN",
-            "facility_id": created_facilities[0].id,
-            "license_expiry_date": date(2026, 11, 30),
-        },
-        {
-            "full_name": "Nurse Grace Asemota",
-            "profession": "Nurse",
-            "license_number": "NMCN-1002",
-            "regulatory_body": "NMCN",
-            "facility_id": created_facilities[1].id,
-            "license_expiry_date": date(2024, 1, 15),
-        },
-        {
-            "full_name": "Pharm. Bello Ojo",
-            "profession": "Pharmacist",
-            "license_number": "PCN-1003",
-            "regulatory_body": "PCN",
-            "facility_id": created_facilities[2].id,
-            "license_expiry_date": date(2026, 3, 20),
-        }
-    ]
+    {
+        "full_name": "Dr. Osagie Ehimare",
+        "profession": "Doctor",
+        "license_number": "MDCN-1001",
+        "regulatory_body": "MDCN",
+        "facility_id": created_facilities[0].id,
+        "license_expiry_date": date(2026, 11, 30),
+        "email": "osagie@edoherma.com",
+        "password": "Password123!",
+        "is_active": True,
+    },
+    {
+        "full_name": "Nurse Grace Asemota",
+        "profession": "Nurse",
+        "license_number": "NMCN-1002",
+        "regulatory_body": "NMCN",
+        "facility_id": created_facilities[1].id,
+        "license_expiry_date": date(2026, 1, 15),
+        "email": "grace@edoherma.com",
+        "password": "Password123!",
+        "is_active": True,
+    },
+    {
+        "full_name": "Pharm. Bello Ojo",
+        "profession": "Pharmacist",
+        "license_number": "PCN-1003",
+        "regulatory_body": "PCN",
+        "facility_id": created_facilities[2].id,
+        "license_expiry_date": date(2026, 3, 20),
+        "email": "bello@edoherma.com",
+        "password": "Password123!",
+        "is_active": True,
+    },
+]
 
     created_personnel = []
 
     for item in personnel_data:
         person = Personnel(
-            id=uuid.uuid4(),
-            full_name=item["full_name"],
-            profession=item["profession"],
-            license_number=item["license_number"],
-            regulatory_body=item["regulatory_body"],
-            facility_id=item["facility_id"],
-            license_expiry_date=item["license_expiry_date"],
-            status=get_license_status(item["license_expiry_date"]),
-        )
+    id=uuid.uuid4(),
+    full_name=item["full_name"],
+    profession=item["profession"],
+    license_number=item["license_number"],
+    regulatory_body=item["regulatory_body"],
+    facility_id=item["facility_id"],
+    license_expiry_date=item["license_expiry_date"],
+    status=get_license_status(item["license_expiry_date"]),
+    email=item["email"],
+    hashed_password=get_password_hash(item["password"]),
+    is_active=item["is_active"],
+)
         db.add(person)
         created_personnel.append(person)
 
@@ -124,20 +137,8 @@ def seed_demo_data(db: Session = Depends(get_db)):
     return {
         "message": "Demo data seeded successfully",
         "facilities_created": len(created_facilities),
-        "personnel_created": len(created_personnel)
+        "personnel_created": len(created_personnel),
     }
-from datetime import date
-import uuid
-
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.core.utils import get_license_status
-from app.models.facility import Facility
-from app.models.personnel import Personnel
-
-router = APIRouter(prefix="/dev", tags=["Development"])
 
 
 @router.post("/seed-extra-demo-data")
@@ -187,7 +188,7 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "license_number": "EDO-LAB-2005",
             "license_issue_date": date(2025, 5, 9),
             "license_expiry_date": date(2026, 6, 18),
-        }
+        },
     ]
 
     facility_map = {}
@@ -228,6 +229,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "MDCN",
             "facility_license_number": "EDO-HOSP-2001",
             "license_expiry_date": date(2026, 9, 10),
+            "email": "patrick@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Nurse Itohan Edobor",
@@ -236,6 +239,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "NMCN",
             "facility_license_number": "EDO-CLIN-2002",
             "license_expiry_date": date(2026, 5, 28),
+            "email": "itohan@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Pharm. Musa Salihu",
@@ -244,6 +249,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "PCN",
             "facility_license_number": "EDO-MAT-2003",
             "license_expiry_date": date(2026, 4, 5),
+            "email": "musa@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Lab. Eunice Ojo",
@@ -252,6 +259,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "MLSCN",
             "facility_license_number": "EDO-LAB-2005",
             "license_expiry_date": date(2026, 6, 1),
+            "email": "eunice@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Mrs. Faith Imade",
@@ -260,6 +269,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "NMCN",
             "facility_license_number": "EDO-MAT-2003",
             "license_expiry_date": date(2026, 11, 18),
+            "email": "faith@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Mr. Samuel Edeh",
@@ -268,6 +279,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "CHPRBN",
             "facility_license_number": "EDO-HOSP-2004",
             "license_expiry_date": date(2026, 8, 8),
+            "email": "samuel@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Ms. Rachael Omoregie",
@@ -276,6 +289,8 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "RRBN",
             "facility_license_number": "EDO-HOSP-2001",
             "license_expiry_date": date(2026, 3, 22),
+            "email": "rachael@edoherma.com",
+            "password": "Password123!",
         },
         {
             "full_name": "Mr. David Eromosele",
@@ -284,7 +299,9 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             "regulatory_body": "MRTB",
             "facility_license_number": "EDO-CLIN-2002",
             "license_expiry_date": date(2026, 7, 11),
-        }
+            "email": "david@edoherma.com",
+            "password": "Password123!",
+        },
     ]
 
     personnel_added = 0
@@ -310,6 +327,9 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
             facility_id=linked_facility.id,
             license_expiry_date=item["license_expiry_date"],
             status=get_license_status(item["license_expiry_date"]),
+            email=item["email"],
+            hashed_password=get_password_hash(item["password"]),
+            is_active=True,
         )
         db.add(person)
         personnel_added += 1
@@ -321,5 +341,5 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
         "facilities_added": facilities_added,
         "facilities_skipped": facilities_skipped,
         "personnel_added": personnel_added,
-        "personnel_skipped": personnel_skipped
+        "personnel_skipped": personnel_skipped,
     }
