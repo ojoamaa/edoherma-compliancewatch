@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
 
 const theme = {
     bg: "#F3F6FB",
