@@ -10,6 +10,7 @@ const theme = {
     muted: "#64748B",
     primary: "#1D4ED8",
     primaryHover: "#1E40AF",
+    primarySoft: "#DBEAFE",
     successBg: "#DCFCE7",
     successText: "#166534",
     warningBg: "#FEF3C7",
@@ -21,14 +22,42 @@ const theme = {
 const cardStyle = {
     background: theme.card,
     border: `1px solid ${theme.border}`,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 24,
-    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.05)",
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
 };
 
-function MetricCard({ title, value }) {
+function formatDate(value) {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleDateString();
+}
+
+function MetricCard({ title, value, tone = "default" }) {
+    const accentStyles = {
+        default: {
+            background: "#FFFFFF",
+            borderLeft: `5px solid ${theme.primary}`,
+        },
+        success: {
+            background: "#FFFFFF",
+            borderLeft: `5px solid ${theme.successText}`,
+        },
+        warning: {
+            background: "#FFFFFF",
+            borderLeft: `5px solid ${theme.warningText}`,
+        },
+        danger: {
+            background: "#FFFFFF",
+            borderLeft: `5px solid ${theme.dangerText}`,
+        },
+    };
+
     return (
-        <div style={styles.metricCard}>
+        <div style={{ ...styles.metricCard, ...accentStyles[tone] }}>
             <div style={styles.metricTitle}>{title}</div>
             <div style={styles.metricValue}>{value ?? 0}</div>
         </div>
@@ -86,6 +115,7 @@ function SectionTable({ title, columns, rows, emptyMessage }) {
         <div style={styles.sectionCard}>
             <div style={styles.sectionHeader}>
                 <h3 style={styles.sectionTitle}>{title}</h3>
+                <span style={styles.sectionCount}>{rows.length} record(s)</span>
             </div>
 
             <div style={styles.tableWrap}>
@@ -108,9 +138,9 @@ function SectionTable({ title, columns, rows, emptyMessage }) {
                             </tr>
                         ) : (
                             rows.map((row, rowIdx) => (
-                                <tr key={rowIdx}>
+                                <tr key={rowIdx} style={styles.tr}>
                                     {row.map((cell, cellIdx) => (
-                                        <td key={cellIdx} style={styles.td}>
+                                        <td key={`${rowIdx}-${cellIdx}`} style={styles.td}>
                                             {cell}
                                         </td>
                                     ))}
@@ -133,6 +163,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
     const [appliedSearch, setAppliedSearch] = useState("");
     const [personnelFilter, setPersonnelFilter] = useState("all");
     const [facilityFilter, setFacilityFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
 
     async function parseErrorResponse(response) {
         const text = await response.text();
@@ -172,7 +203,9 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
             if (!response.ok) {
                 const message = await parseErrorResponse(response);
-                throw new Error(message || `Dashboard request failed with status ${response.status}`);
+                throw new Error(
+                    message || `Dashboard request failed with status ${response.status}`
+                );
             }
 
             const json = await response.json();
@@ -199,21 +232,13 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
     const professionOptions = useMemo(() => {
         return Array.from(
-            new Set(
-                allPersonnel
-                    .map((item) => item.profession)
-                    .filter(Boolean)
-            )
+            new Set(allPersonnel.map((item) => item.profession).filter(Boolean))
         ).sort((a, b) => a.localeCompare(b));
     }, [allPersonnel]);
 
     const lgaOptions = useMemo(() => {
         return Array.from(
-            new Set(
-                allFacilities
-                    .map((item) => item.lga)
-                    .filter(Boolean)
-            )
+            new Set(allFacilities.map((item) => item.lga).filter(Boolean))
         ).sort((a, b) => a.localeCompare(b));
     }, [allFacilities]);
 
@@ -224,6 +249,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
             const license = item.license_number?.toLowerCase() || "";
             const facilityName = item.facility_name?.toLowerCase() || "";
             const lga = item.lga?.toLowerCase() || "";
+            const status = item.status?.toLowerCase() || "";
 
             const matchesSearch =
                 !searchLower ||
@@ -233,11 +259,15 @@ export default function DashboardPage({ token, admin, onLogout }) {
                 facilityName.includes(searchLower) ||
                 lga.includes(searchLower);
 
-            const matchesFilter =
+            const matchesProfession =
                 personnelFilter === "all" ||
                 profession === personnelFilter.toLowerCase();
 
-            return matchesSearch && matchesFilter;
+            const matchesStatus =
+                statusFilter === "all" ||
+                status === statusFilter.toLowerCase();
+
+            return matchesSearch && matchesProfession && matchesStatus;
         });
 
     const filterFacilities = (items = []) =>
@@ -246,6 +276,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
             const facilityType = item.facility_type?.toLowerCase() || "";
             const lga = item.lga?.toLowerCase() || "";
             const license = item.license_number?.toLowerCase() || "";
+            const status = item.status?.toLowerCase() || "";
 
             const matchesSearch =
                 !searchLower ||
@@ -254,46 +285,55 @@ export default function DashboardPage({ token, admin, onLogout }) {
                 lga.includes(searchLower) ||
                 license.includes(searchLower);
 
-            const matchesFilter =
+            const matchesLga =
                 facilityFilter === "all" ||
                 lga === facilityFilter.toLowerCase();
 
-            return matchesSearch && matchesFilter;
+            const matchesStatus =
+                statusFilter === "all" ||
+                status === statusFilter.toLowerCase();
+
+            return matchesSearch && matchesLga && matchesStatus;
         });
 
     const allFilteredPersonnel = useMemo(
         () => filterPersonnel(allPersonnel),
-        [allPersonnel, appliedSearch, personnelFilter]
+        [allPersonnel, appliedSearch, personnelFilter, statusFilter]
     );
 
     const allFilteredFacilities = useMemo(
         () => filterFacilities(allFacilities),
-        [allFacilities, appliedSearch, facilityFilter]
+        [allFacilities, appliedSearch, facilityFilter, statusFilter]
     );
 
     const expiredPersonnel = useMemo(
         () => filterPersonnel(expiredPersonnelRaw),
-        [expiredPersonnelRaw, appliedSearch, personnelFilter]
+        [expiredPersonnelRaw, appliedSearch, personnelFilter, statusFilter]
     );
 
     const expiringPersonnel = useMemo(
         () => filterPersonnel(expiringPersonnelRaw),
-        [expiringPersonnelRaw, appliedSearch, personnelFilter]
+        [expiringPersonnelRaw, appliedSearch, personnelFilter, statusFilter]
     );
 
     const expiredFacilities = useMemo(
         () => filterFacilities(expiredFacilitiesRaw),
-        [expiredFacilitiesRaw, appliedSearch, facilityFilter]
+        [expiredFacilitiesRaw, appliedSearch, facilityFilter, statusFilter]
     );
 
     const expiringFacilities = useMemo(
         () => filterFacilities(expiringFacilitiesRaw),
-        [expiringFacilitiesRaw, appliedSearch, facilityFilter]
+        [expiringFacilitiesRaw, appliedSearch, facilityFilter, statusFilter]
     );
 
     const exportCsv = (filename, headers, rows) => {
-        const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-        const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(",")).join("\n");
+        const escapeCell = (value) =>
+            `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+        const csv = [headers, ...rows]
+            .map((row) => row.map(escapeCell).join(","))
+            .join("\n");
+
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -320,11 +360,40 @@ export default function DashboardPage({ token, admin, onLogout }) {
         URL.revokeObjectURL(url);
     };
 
+    const exportAllPersonnelCsv = () => {
+        exportCsv(
+            "all-personnel.csv",
+            ["Name", "Profession", "License No.", "Expiry Date", "Status"],
+            allFilteredPersonnel.map((x) => [
+                x.full_name,
+                x.profession,
+                x.license_number,
+                x.license_expiry_date,
+                x.status,
+            ])
+        );
+    };
+
+    const exportAllFacilitiesCsv = () => {
+        exportCsv(
+            "all-facilities.csv",
+            ["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"],
+            allFilteredFacilities.map((x) => [
+                x.facility_name,
+                x.facility_type,
+                x.lga,
+                x.license_number,
+                x.license_expiry_date,
+                x.status,
+            ])
+        );
+    };
+
     const personnelRows = allFilteredPersonnel.map((item) => [
         item.full_name || "-",
         item.profession || "-",
         item.license_number || "-",
-        item.license_expiry_date || "-",
+        formatDate(item.license_expiry_date),
         <StatusBadge value={item.status} />,
     ]);
 
@@ -333,7 +402,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         item.facility_type || "-",
         item.lga || "-",
         item.license_number || "-",
-        item.license_expiry_date || "-",
+        formatDate(item.license_expiry_date),
         <StatusBadge value={item.status} />,
     ]);
 
@@ -341,7 +410,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         item.full_name || "-",
         item.profession || "-",
         item.license_number || "-",
-        item.license_expiry_date || "-",
+        formatDate(item.license_expiry_date),
         <StatusBadge value={item.status} />,
     ]);
 
@@ -349,7 +418,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         item.full_name || "-",
         item.profession || "-",
         item.license_number || "-",
-        item.license_expiry_date || "-",
+        formatDate(item.license_expiry_date),
         <StatusBadge value={item.status} />,
     ]);
 
@@ -358,7 +427,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         item.facility_type || "-",
         item.lga || "-",
         item.license_number || "-",
-        item.license_expiry_date || "-",
+        formatDate(item.license_expiry_date),
         <StatusBadge value={item.status} />,
     ]);
 
@@ -367,7 +436,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         item.facility_type || "-",
         item.lga || "-",
         item.license_number || "-",
-        item.license_expiry_date || "-",
+        formatDate(item.license_expiry_date),
         <StatusBadge value={item.status} />,
     ]);
 
@@ -418,6 +487,12 @@ export default function DashboardPage({ token, admin, onLogout }) {
                         <div style={styles.headerButtons}>
                             <button style={styles.secondaryButton} onClick={exportJson}>
                                 Export JSON
+                            </button>
+                            <button style={styles.secondaryButton} onClick={exportAllPersonnelCsv}>
+                                Export Personnel
+                            </button>
+                            <button style={styles.secondaryButton} onClick={exportAllFacilitiesCsv}>
+                                Export Facilities
                             </button>
                             <button style={styles.secondaryButton} onClick={onLogout}>
                                 Logout
@@ -477,6 +552,20 @@ export default function DashboardPage({ token, admin, onLogout }) {
                             </select>
                         </div>
 
+                        <div>
+                            <label style={styles.label}>Status filter</label>
+                            <select
+                                style={styles.input}
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="Active">Active</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Expiring Soon">Expiring Soon</option>
+                            </select>
+                        </div>
+
                         <div style={styles.actionCol}>
                             <button
                                 style={styles.primaryButton}
@@ -491,6 +580,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
                                     setAppliedSearch("");
                                     setPersonnelFilter("all");
                                     setFacilityFilter("all");
+                                    setStatusFilter("all");
                                 }}
                             >
                                 Clear
@@ -501,16 +591,16 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
                 <div style={styles.metricsGrid}>
                     <MetricCard title="Total Facilities" value={summary.total_facilities} />
-                    <MetricCard title="Active Facilities" value={summary.active_facilities} />
-                    <MetricCard title="Expired Facilities" value={summary.expired_facilities} />
-                    <MetricCard title="Expiring Facilities" value={summary.expiring_facilities} />
+                    <MetricCard title="Active Facilities" value={summary.active_facilities} tone="success" />
+                    <MetricCard title="Expired Facilities" value={summary.expired_facilities} tone="danger" />
+                    <MetricCard title="Expiring Facilities" value={summary.expiring_facilities} tone="warning" />
                 </div>
 
                 <div style={styles.metricsGrid}>
                     <MetricCard title="Total Personnel" value={summary.total_personnel} />
-                    <MetricCard title="Active Personnel" value={summary.active_personnel} />
-                    <MetricCard title="Expired Personnel" value={summary.expired_personnel} />
-                    <MetricCard title="Expiring Personnel" value={summary.expiring_personnel} />
+                    <MetricCard title="Active Personnel" value={summary.active_personnel} tone="success" />
+                    <MetricCard title="Expired Personnel" value={summary.expired_personnel} tone="danger" />
+                    <MetricCard title="Expiring Personnel" value={summary.expiring_personnel} tone="warning" />
                 </div>
 
                 <div style={styles.twoColGrid}>
@@ -685,7 +775,7 @@ const styles = {
         color: theme.text,
     },
     container: {
-        maxWidth: "1400px",
+        maxWidth: "1440px",
         margin: "0 auto",
     },
     heroCard: {
@@ -705,7 +795,7 @@ const styles = {
         display: "inline-block",
         padding: "6px 12px",
         borderRadius: "999px",
-        background: "#DBEAFE",
+        background: theme.primarySoft,
         color: theme.primary,
         fontSize: "12px",
         fontWeight: 700,
@@ -713,7 +803,7 @@ const styles = {
     },
     title: {
         margin: 0,
-        fontSize: "46px",
+        fontSize: "44px",
         lineHeight: 1.05,
         fontWeight: 800,
         color: theme.text,
@@ -756,7 +846,7 @@ const styles = {
     },
     filterGrid: {
         display: "grid",
-        gridTemplateColumns: "2fr 1fr 1fr auto",
+        gridTemplateColumns: "2fr 1fr 1fr 1fr auto",
         gap: "14px",
         alignItems: "end",
     },
@@ -833,9 +923,18 @@ const styles = {
     },
     sectionTitle: {
         margin: 0,
-        fontSize: "24px",
+        fontSize: "22px",
         fontWeight: 800,
         color: theme.text,
+    },
+    sectionCount: {
+        fontSize: "13px",
+        color: theme.muted,
+        fontWeight: 700,
+        background: "#F8FAFC",
+        border: `1px solid ${theme.border}`,
+        borderRadius: "999px",
+        padding: "6px 10px",
     },
     miniBarWrap: {
         marginBottom: "14px",
@@ -892,16 +991,18 @@ const styles = {
         maxHeight: 360,
         overflowY: "auto",
         borderRadius: "12px",
+        border: `1px solid ${theme.border}`,
     },
     table: {
         width: "100%",
         minWidth: "500px",
         borderCollapse: "collapse",
+        background: "#fff",
     },
     th: {
         position: "sticky",
         top: 0,
-        background: "#fff",
+        background: "#F8FAFC",
         textAlign: "left",
         padding: "12px 10px",
         color: theme.muted,
@@ -909,6 +1010,9 @@ const styles = {
         fontSize: "13px",
         borderBottom: `1px solid ${theme.border}`,
         zIndex: 1,
+    },
+    tr: {
+        transition: "background 0.2s ease",
     },
     td: {
         padding: "12px 10px",

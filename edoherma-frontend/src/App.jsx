@@ -3,9 +3,10 @@ import DashboardPage from "./DashboardPage";
 import LoginPage from "./LoginPage";
 import PersonnelPage from "./PersonnelPage";
 
-const TOKEN_KEY = "edohherma_token";
-const USER_TYPE_KEY = "edohherma_user_type";
+const TOKEN_KEY = "edoherma_token";
+const USER_TYPE_KEY = "edoherma_user_type";
 const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
+
 export default function App() {
     const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || "");
     const [userType, setUserType] = useState(localStorage.getItem(USER_TYPE_KEY) || "");
@@ -26,9 +27,18 @@ export default function App() {
 
             try {
                 const endpoint =
-                    userType === "admin" ? "/api/admin/me" : "/api/personnel/me";
+                    userType === "admin"
+                        ? "/api/admin/me"
+                        : userType === "personnel"
+                            ? "/api/personnel/me"
+                            : null;
+
+                if (!endpoint) {
+                    throw new Error("Unknown user type");
+                }
 
                 const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -65,13 +75,13 @@ export default function App() {
         };
     }, [token, userType]);
 
-    const handleLoginSuccess = (accessToken, userProfile, loginType) => {
+    const handleLoginSuccess = (accessToken, _userProfile, loginType) => {
         localStorage.setItem(TOKEN_KEY, accessToken);
         localStorage.setItem(USER_TYPE_KEY, loginType);
         setToken(accessToken);
         setUserType(loginType);
-        setProfile(userProfile);
-        setCheckingAuth(false);
+        setProfile(null);
+        setCheckingAuth(true);
     };
 
     const handleLogout = () => {
