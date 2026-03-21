@@ -2,6 +2,20 @@ import React, { useState } from "react";
 
 const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
 
+const theme = {
+    bg: "#F3F6FB",
+    card: "#FFFFFF",
+    border: "#E5E7EB",
+    text: "#0F172A",
+    muted: "#64748B",
+    primary: "#1D4ED8",
+    primarySoft: "#DBEAFE",
+    successBg: "#DCFCE7",
+    successText: "#166534",
+    dangerBg: "#FEE2E2",
+    dangerText: "#991B1B",
+};
+
 const DEFAULT_ADMIN = {
     email: "admin@edoherma.com",
     password: "Admin@12345",
@@ -42,15 +56,9 @@ export default function LoginPage({ onLoginSuccess }) {
 
         try {
             const data = JSON.parse(text);
-            if (typeof data.detail === "string") {
-                return data.detail;
-            }
-            if (Array.isArray(data.detail)) {
-                return JSON.stringify(data.detail, null, 2);
-            }
-            if (typeof data.message === "string") {
-                return data.message;
-            }
+            if (typeof data.detail === "string") return data.detail;
+            if (Array.isArray(data.detail)) return JSON.stringify(data.detail, null, 2);
+            if (typeof data.message === "string") return data.message;
             return text;
         } catch {
             return text;
@@ -131,71 +139,84 @@ export default function LoginPage({ onLoginSuccess }) {
 
     return (
         <div style={styles.page}>
-            <form style={styles.card} onSubmit={handleSubmit}>
-                <div style={styles.switchWrap}>
-                    <button
-                        type="button"
-                        onClick={switchToAdmin}
-                        style={{
-                            ...styles.switchButton,
-                            ...(isAdmin ? styles.switchButtonActive : {}),
-                        }}
-                    >
-                        Admin Login
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={switchToPersonnel}
-                        style={{
-                            ...styles.switchButton,
-                            ...(!isAdmin ? styles.switchButtonActive : {}),
-                        }}
-                    >
-                        Personnel Login
-                    </button>
+            <div style={styles.wrapper}>
+                <div style={styles.brandBlock}>
+                    <div style={styles.pill}>EdoHERMA ComplianceWatch</div>
+                    <h1 style={styles.heroTitle}>Compliance monitoring made clearer.</h1>
+                    <p style={styles.heroText}>
+                        Sign in as an administrator or personnel user to access the live compliance
+                        dashboard and profile portal.
+                    </p>
                 </div>
 
-                <div style={styles.pill}>
-                    {isAdmin ? "Admin Access" : "Personnel Access"}
-                </div>
+                <form style={styles.card} onSubmit={handleSubmit}>
+                    <div style={styles.switchWrap}>
+                        <button
+                            type="button"
+                            onClick={switchToAdmin}
+                            style={{
+                                ...styles.switchButton,
+                                ...(isAdmin ? styles.switchButtonActive : {}),
+                            }}
+                        >
+                            Admin Login
+                        </button>
 
-                <h1 style={styles.title}>EdoHERMA ComplianceWatch</h1>
+                        <button
+                            type="button"
+                            onClick={switchToPersonnel}
+                            style={{
+                                ...styles.switchButton,
+                                ...(!isAdmin ? styles.switchButtonActive : {}),
+                            }}
+                        >
+                            Personnel Login
+                        </button>
+                    </div>
 
-                <p style={styles.subtitle}>
-                    {isAdmin
-                        ? "Sign in as an authorized admin or compliance officer to access the dashboard."
-                        : "Sign in as registered personnel to view your compliance profile."}
-                </p>
+                    <div style={styles.modeBadge}>
+                        {isAdmin ? "Admin Access" : "Personnel Access"}
+                    </div>
 
-                <label style={styles.label}>Email</label>
-                <input
-                    style={styles.input}
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="username"
-                />
+                    <h2 style={styles.title}>Welcome back</h2>
 
-                <label style={styles.label}>Password</label>
-                <input
-                    style={styles.input}
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                />
+                    <p style={styles.subtitle}>
+                        {isAdmin
+                            ? "Sign in as an authorized admin or compliance officer to access the dashboard."
+                            : "Sign in as registered personnel to view your compliance profile."}
+                    </p>
 
-                {error ? <div style={styles.error}>{error}</div> : null}
+                    <label style={styles.label}>Email</label>
+                    <input
+                        style={styles.input}
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        autoComplete="username"
+                        placeholder="Enter email address"
+                    />
 
-                <button type="submit" style={styles.button} disabled={loading}>
-                    {loading
-                        ? "Signing in..."
-                        : isAdmin
-                            ? "Sign In as Admin"
-                            : "Sign In as Personnel"}
-                </button>
-            </form>
+                    <label style={styles.label}>Password</label>
+                    <input
+                        style={styles.input}
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        placeholder="Enter password"
+                    />
+
+                    {error ? <div style={styles.error}>{error}</div> : null}
+
+                    <button type="submit" style={styles.button} disabled={loading}>
+                        {loading
+                            ? "Signing in..."
+                            : isAdmin
+                                ? "Sign In as Admin"
+                                : "Sign In as Personnel"}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }
@@ -203,18 +224,55 @@ export default function LoginPage({ onLoginSuccess }) {
 const styles = {
     page: {
         minHeight: "100vh",
+        background: theme.bg,
+        padding: 24,
+        fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#F3F6FB",
-        padding: 24,
-        fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
+    },
+    wrapper: {
+        width: "100%",
+        maxWidth: 1180,
+        display: "grid",
+        gridTemplateColumns: "1fr 520px",
+        gap: 28,
+        alignItems: "center",
+    },
+    brandBlock: {
+        padding: "12px 8px",
+    },
+    pill: {
+        display: "inline-block",
+        padding: "6px 12px",
+        borderRadius: 999,
+        background: theme.primarySoft,
+        color: theme.primary,
+        fontWeight: 700,
+        fontSize: 12,
+        marginBottom: 16,
+    },
+    heroTitle: {
+        margin: 0,
+        fontSize: 48,
+        lineHeight: 1.05,
+        fontWeight: 800,
+        color: theme.text,
+        letterSpacing: "-1px",
+        maxWidth: 560,
+    },
+    heroText: {
+        marginTop: 16,
+        marginBottom: 0,
+        color: theme.muted,
+        fontSize: 17,
+        lineHeight: 1.6,
+        maxWidth: 540,
     },
     card: {
         width: "100%",
-        maxWidth: 620,
-        background: "#FFFFFF",
-        border: "1px solid #E5E7EB",
+        background: theme.card,
+        border: `1px solid ${theme.border}`,
         borderRadius: 24,
         padding: 32,
         boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
@@ -236,16 +294,16 @@ const styles = {
         cursor: "pointer",
     },
     switchButtonActive: {
-        background: "#DBEAFE",
-        color: "#1D4ED8",
+        background: theme.primarySoft,
+        color: theme.primary,
         border: "1px solid #93C5FD",
     },
-    pill: {
+    modeBadge: {
         display: "inline-block",
         padding: "6px 12px",
         borderRadius: 999,
-        background: "#DBEAFE",
-        color: "#1D4ED8",
+        background: theme.primarySoft,
+        color: theme.primary,
         fontWeight: 700,
         fontSize: 12,
         marginBottom: 16,
@@ -254,14 +312,15 @@ const styles = {
         margin: 0,
         fontSize: 30,
         fontWeight: 800,
-        color: "#0F172A",
+        color: theme.text,
         lineHeight: 1.1,
     },
     subtitle: {
-        color: "#64748B",
+        color: theme.muted,
         fontSize: 16,
         marginTop: 12,
         marginBottom: 24,
+        lineHeight: 1.5,
     },
     label: {
         display: "block",
@@ -278,6 +337,8 @@ const styles = {
         border: "1px solid #CBD5E1",
         fontSize: 16,
         boxSizing: "border-box",
+        outline: "none",
+        background: "#FFFFFF",
     },
     button: {
         width: "100%",
@@ -285,7 +346,7 @@ const styles = {
         padding: "14px 18px",
         borderRadius: 14,
         border: "none",
-        background: "#1D4ED8",
+        background: theme.primary,
         color: "#FFFFFF",
         fontSize: 16,
         fontWeight: 700,
@@ -293,8 +354,8 @@ const styles = {
     },
     error: {
         marginTop: 16,
-        background: "#FEE2E2",
-        color: "#991B1B",
+        background: theme.dangerBg,
+        color: theme.dangerText,
         border: "1px solid #FECACA",
         borderRadius: 12,
         padding: "12px 14px",
