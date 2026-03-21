@@ -8,8 +8,8 @@ const DEFAULT_ADMIN = {
 };
 
 const DEFAULT_PERSONNEL = {
-    email: "",
-    password: "",
+    email: "osagie@edoherma.com",
+    password: "Password123!",
 };
 
 export default function LoginPage({ onLoginSuccess }) {
