@@ -30,20 +30,25 @@ function MetricCard({ title, value }) {
     return (
         <div style={styles.metricCard}>
             <div style={styles.metricTitle}>{title}</div>
-            <div style={styles.metricValue}>{value}</div>
+            <div style={styles.metricValue}>{value ?? 0}</div>
         </div>
     );
 }
 
 function MiniBar({ label, value, total }) {
+    const safeValue = Number(value || 0);
+    const safeTotal = Number(total || 0);
+
     const width =
-        total > 0 ? `${Math.max((value / total) * 100, value > 0 ? 8 : 0)}%` : "0%";
+        safeTotal > 0
+            ? `${Math.max((safeValue / safeTotal) * 100, safeValue > 0 ? 8 : 0)}%`
+            : "0%";
 
     return (
         <div style={styles.miniBarWrap}>
             <div style={styles.miniBarHeader}>
                 <span>{label}</span>
-                <span style={styles.miniBarValue}>{value}</span>
+                <span style={styles.miniBarValue}>{safeValue}</span>
             </div>
             <div style={styles.miniBarTrack}>
                 <div style={{ ...styles.miniBarFill, width }} />
@@ -73,7 +78,7 @@ function StatusBadge({ value }) {
         style.color = theme.warningText;
     }
 
-    return <span style={style}>{value}</span>;
+    return <span style={style}>{value || "Unknown"}</span>;
 }
 
 function SectionTable({ title, columns, rows, emptyMessage }) {
@@ -129,6 +134,23 @@ export default function DashboardPage({ token, admin, onLogout }) {
     const [personnelFilter, setPersonnelFilter] = useState("all");
     const [facilityFilter, setFacilityFilter] = useState("all");
 
+    async function parseErrorResponse(response) {
+        const text = await response.text();
+
+        if (!text) {
+            return `Request failed with status ${response.status}`;
+        }
+
+        try {
+            const json = JSON.parse(text);
+            if (typeof json.detail === "string") return json.detail;
+            if (typeof json.message === "string") return json.message;
+            return text;
+        } catch {
+            return text;
+        }
+    }
+
     const loadDashboard = async () => {
         if (!token) {
             setError("Missing admin token.");
@@ -141,13 +163,16 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
         try {
             const response = await fetch(`${API_BASE}/api/dashboard/overview`, {
+                method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
                 },
             });
 
             if (!response.ok) {
-                throw new Error(`Dashboard request failed with status ${response.status}`);
+                const message = await parseErrorResponse(response);
+                throw new Error(message || `Dashboard request failed with status ${response.status}`);
             }
 
             const json = await response.json();
@@ -163,77 +188,107 @@ export default function DashboardPage({ token, admin, onLogout }) {
         loadDashboard();
     }, [token]);
 
+    const allPersonnel = useMemo(() => data?.all_personnel || [], [data]);
+    const allFacilities = useMemo(() => data?.all_facilities || [], [data]);
+    const expiredPersonnelRaw = useMemo(() => data?.expired_personnel || [], [data]);
+    const expiringPersonnelRaw = useMemo(() => data?.expiring_personnel || [], [data]);
+    const expiredFacilitiesRaw = useMemo(() => data?.expired_facilities || [], [data]);
+    const expiringFacilitiesRaw = useMemo(() => data?.expiring_facilities || [], [data]);
+
     const searchLower = appliedSearch.trim().toLowerCase();
 
     const professionOptions = useMemo(() => {
-        if (!data?.all_personnel) return [];
-        return Array.from(new Set(data.all_personnel.map((item) => item.profession))).sort();
-    }, [data]);
+        return Array.from(
+            new Set(
+                allPersonnel
+                    .map((item) => item.profession)
+                    .filter(Boolean)
+            )
+        ).sort((a, b) => a.localeCompare(b));
+    }, [allPersonnel]);
 
     const lgaOptions = useMemo(() => {
-        if (!data?.all_facilities) return [];
-        return Array.from(new Set(data.all_facilities.map((item) => item.lga))).sort();
-    }, [data]);
+        return Array.from(
+            new Set(
+                allFacilities
+                    .map((item) => item.lga)
+                    .filter(Boolean)
+            )
+        ).sort((a, b) => a.localeCompare(b));
+    }, [allFacilities]);
 
     const filterPersonnel = (items = []) =>
         items.filter((item) => {
+            const name = item.full_name?.toLowerCase() || "";
+            const profession = item.profession?.toLowerCase() || "";
+            const license = item.license_number?.toLowerCase() || "";
+            const facilityName = item.facility_name?.toLowerCase() || "";
+            const lga = item.lga?.toLowerCase() || "";
+
             const matchesSearch =
                 !searchLower ||
-                item.full_name?.toLowerCase().includes(searchLower) ||
-                item.profession?.toLowerCase().includes(searchLower) ||
-                item.license_number?.toLowerCase().includes(searchLower);
+                name.includes(searchLower) ||
+                profession.includes(searchLower) ||
+                license.includes(searchLower) ||
+                facilityName.includes(searchLower) ||
+                lga.includes(searchLower);
 
             const matchesFilter =
                 personnelFilter === "all" ||
-                item.profession?.toLowerCase() === personnelFilter.toLowerCase();
+                profession === personnelFilter.toLowerCase();
 
             return matchesSearch && matchesFilter;
         });
 
     const filterFacilities = (items = []) =>
         items.filter((item) => {
+            const facilityName = item.facility_name?.toLowerCase() || "";
+            const facilityType = item.facility_type?.toLowerCase() || "";
+            const lga = item.lga?.toLowerCase() || "";
+            const license = item.license_number?.toLowerCase() || "";
+
             const matchesSearch =
                 !searchLower ||
-                item.facility_name?.toLowerCase().includes(searchLower) ||
-                item.facility_type?.toLowerCase().includes(searchLower) ||
-                item.lga?.toLowerCase().includes(searchLower) ||
-                item.license_number?.toLowerCase().includes(searchLower);
+                facilityName.includes(searchLower) ||
+                facilityType.includes(searchLower) ||
+                lga.includes(searchLower) ||
+                license.includes(searchLower);
 
             const matchesFilter =
                 facilityFilter === "all" ||
-                item.lga?.toLowerCase() === facilityFilter.toLowerCase();
+                lga === facilityFilter.toLowerCase();
 
             return matchesSearch && matchesFilter;
         });
 
     const allFilteredPersonnel = useMemo(
-        () => filterPersonnel(data?.all_personnel || []),
-        [data, appliedSearch, personnelFilter]
+        () => filterPersonnel(allPersonnel),
+        [allPersonnel, appliedSearch, personnelFilter]
     );
 
     const allFilteredFacilities = useMemo(
-        () => filterFacilities(data?.all_facilities || []),
-        [data, appliedSearch, facilityFilter]
+        () => filterFacilities(allFacilities),
+        [allFacilities, appliedSearch, facilityFilter]
     );
 
     const expiredPersonnel = useMemo(
-        () => filterPersonnel(data?.expired_personnel || []),
-        [data, appliedSearch, personnelFilter]
+        () => filterPersonnel(expiredPersonnelRaw),
+        [expiredPersonnelRaw, appliedSearch, personnelFilter]
     );
 
     const expiringPersonnel = useMemo(
-        () => filterPersonnel(data?.expiring_personnel || []),
-        [data, appliedSearch, personnelFilter]
+        () => filterPersonnel(expiringPersonnelRaw),
+        [expiringPersonnelRaw, appliedSearch, personnelFilter]
     );
 
     const expiredFacilities = useMemo(
-        () => filterFacilities(data?.expired_facilities || []),
-        [data, appliedSearch, facilityFilter]
+        () => filterFacilities(expiredFacilitiesRaw),
+        [expiredFacilitiesRaw, appliedSearch, facilityFilter]
     );
 
     const expiringFacilities = useMemo(
-        () => filterFacilities(data?.expiring_facilities || []),
-        [data, appliedSearch, facilityFilter]
+        () => filterFacilities(expiringFacilitiesRaw),
+        [expiringFacilitiesRaw, appliedSearch, facilityFilter]
     );
 
     const exportCsv = (filename, headers, rows) => {
@@ -258,7 +313,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", "edohherma-dashboard-overview.json");
+        link.setAttribute("download", "edoherma-dashboard-overview.json");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -266,53 +321,53 @@ export default function DashboardPage({ token, admin, onLogout }) {
     };
 
     const personnelRows = allFilteredPersonnel.map((item) => [
-        item.full_name,
-        item.profession,
-        item.license_number,
-        item.license_expiry_date,
+        item.full_name || "-",
+        item.profession || "-",
+        item.license_number || "-",
+        item.license_expiry_date || "-",
         <StatusBadge value={item.status} />,
     ]);
 
     const facilityRows = allFilteredFacilities.map((item) => [
-        item.facility_name,
-        item.facility_type,
-        item.lga,
-        item.license_number,
-        item.license_expiry_date,
+        item.facility_name || "-",
+        item.facility_type || "-",
+        item.lga || "-",
+        item.license_number || "-",
+        item.license_expiry_date || "-",
         <StatusBadge value={item.status} />,
     ]);
 
     const expiredPersonnelRows = expiredPersonnel.map((item) => [
-        item.full_name,
-        item.profession,
-        item.license_number,
-        item.license_expiry_date,
+        item.full_name || "-",
+        item.profession || "-",
+        item.license_number || "-",
+        item.license_expiry_date || "-",
         <StatusBadge value={item.status} />,
     ]);
 
     const expiringPersonnelRows = expiringPersonnel.map((item) => [
-        item.full_name,
-        item.profession,
-        item.license_number,
-        item.license_expiry_date,
+        item.full_name || "-",
+        item.profession || "-",
+        item.license_number || "-",
+        item.license_expiry_date || "-",
         <StatusBadge value={item.status} />,
     ]);
 
     const expiredFacilityRows = expiredFacilities.map((item) => [
-        item.facility_name,
-        item.facility_type,
-        item.lga,
-        item.license_number,
-        item.license_expiry_date,
+        item.facility_name || "-",
+        item.facility_type || "-",
+        item.lga || "-",
+        item.license_number || "-",
+        item.license_expiry_date || "-",
         <StatusBadge value={item.status} />,
     ]);
 
     const expiringFacilityRows = expiringFacilities.map((item) => [
-        item.facility_name,
-        item.facility_type,
-        item.lga,
-        item.license_number,
-        item.license_expiry_date,
+        item.facility_name || "-",
+        item.facility_type || "-",
+        item.lga || "-",
+        item.license_number || "-",
+        item.license_expiry_date || "-",
         <StatusBadge value={item.status} />,
     ]);
 
@@ -381,7 +436,10 @@ export default function DashboardPage({ token, admin, onLogout }) {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={(e) => {
-                                    if (e.key === "Enter") setAppliedSearch(search);
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        setAppliedSearch(search);
+                                    }
                                 }}
                                 placeholder="Search by name, profession, facility, license number, or LGA"
                             />
