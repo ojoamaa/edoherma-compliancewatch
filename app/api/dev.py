@@ -343,3 +343,51 @@ def seed_extra_demo_data(db: Session = Depends(get_db)):
         "personnel_added": personnel_added,
         "personnel_skipped": personnel_skipped,
     }
+
+@router.post("/repair-personnel-login")
+def repair_personnel_login(db: Session = Depends(get_db)):
+    personnel_updates = [
+        {
+            "license_number": "MDCN-1001",
+            "email": "osagie@edoherma.com",
+            "password": "Password123!",
+            "is_active": True,
+        },
+        {
+            "license_number": "NMCN-1002",
+            "email": "grace@edoherma.com",
+            "password": "Password123!",
+            "is_active": True,
+        },
+        {
+            "license_number": "PCN-1003",
+            "email": "bello@edoherma.com",
+            "password": "Password123!",
+            "is_active": True,
+        },
+    ]
+
+    updated = 0
+    missing = []
+
+    for item in personnel_updates:
+        person = db.query(Personnel).filter(
+            Personnel.license_number == item["license_number"]
+        ).first()
+
+        if not person:
+            missing.append(item["license_number"])
+            continue
+
+        person.email = item["email"]
+        person.hashed_password = get_password_hash(item["password"])
+        person.is_active = item["is_active"]
+        updated += 1
+
+    db.commit()
+
+    return {
+        "message": "Personnel login repaired successfully",
+        "updated": updated,
+        "missing": missing,
+    }
