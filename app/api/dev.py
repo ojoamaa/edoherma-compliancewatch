@@ -10,7 +10,7 @@ from app.core.security import get_password_hash
 from app.models.facility import Facility
 from app.models.personnel import Personnel
 
-router = APIRouter(prefix="/dev", tags=["Development"])
+router = APIRouter(tags=["Development"])
 
 
 @router.post("/seed-demo-data")

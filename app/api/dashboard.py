@@ -1,54 +1,70 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
 
 from app.core.database import get_db
+from app.core.security import verify_token
+from app.models.admin import AdminUser
 from app.models.facility import Facility
 from app.models.personnel import Personnel
-from app.api.admin_auth import require_roles
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
+
+bearer_scheme = HTTPBearer()
+
+
+def get_current_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> AdminUser:
+    token = credentials.credentials
+    payload = verify_token(token)
+    print("DASHBOARD TOKEN PAYLOAD:", payload)
+
+    if not payload:
+        raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired token",
+    )
+
+    email = payload.get("sub")
+    role = payload.get("role")
+
+    if not email or role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized",
+        )
+
+    admin = db.query(AdminUser).filter(AdminUser.email == email).first()
+
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin not found",
+        )
+
+    return admin
 
 
 @router.get("/overview")
 def dashboard_overview(
     db: Session = Depends(get_db),
-    current_admin=Depends(require_roles("admin_manager", "data_officer")),
+    current_admin: AdminUser = Depends(get_current_admin),
 ):
-    today = date.today()
-    next_30_days = today + timedelta(days=30)
-
     facilities = db.query(Facility).all()
     personnel = db.query(Personnel).all()
 
-    expired_facilities = [
-        f for f in facilities
-        if f.license_expiry_date and f.license_expiry_date < today
-    ]
-
+    active_facilities = [f for f in facilities if (f.status or "").lower() == "active"]
+    expired_facilities = [f for f in facilities if (f.status or "").lower() == "expired"]
     expiring_facilities = [
-        f for f in facilities
-        if f.license_expiry_date and today <= f.license_expiry_date <= next_30_days
+        f for f in facilities if (f.status or "").lower() in ["expiring", "expiring soon"]
     ]
 
-    active_facilities = [
-        f for f in facilities
-        if f.license_expiry_date and f.license_expiry_date > next_30_days
-    ]
-
-    expired_personnel = [
-        p for p in personnel
-        if p.license_expiry_date and p.license_expiry_date < today
-    ]
-
+    active_personnel = [p for p in personnel if (p.status or "").lower() == "active"]
+    expired_personnel = [p for p in personnel if (p.status or "").lower() == "expired"]
     expiring_personnel = [
-        p for p in personnel
-        if p.license_expiry_date and today <= p.license_expiry_date <= next_30_days
-    ]
-
-    active_personnel = [
-        p for p in personnel
-        if p.license_expiry_date and p.license_expiry_date > next_30_days
+        p for p in personnel if (p.status or "").lower() in ["expiring", "expiring soon"]
     ]
 
     return {
@@ -62,77 +78,15 @@ def dashboard_overview(
             "expired_personnel": len(expired_personnel),
             "expiring_personnel": len(expiring_personnel),
         },
-        "all_facilities": [
-            {
-                "id": str(f.id),
-                "facility_name": f.facility_name,
-                "facility_type": f.facility_type,
-                "lga": f.lga,
-                "address": f.address,
-                "license_number": f.license_number,
-                "license_issue_date": str(f.license_issue_date) if f.license_issue_date else None,
-                "license_expiry_date": str(f.license_expiry_date) if f.license_expiry_date else None,
-                "status": f.status,
-            }
-            for f in facilities
-        ],
-        "all_personnel": [
-            {
-                "id": str(p.id),
-                "full_name": p.full_name,
-                "profession": p.profession,
-                "license_number": p.license_number,
-                "regulatory_body": p.regulatory_body,
-                "facility_id": str(p.facility_id) if p.facility_id else None,
-                "license_expiry_date": str(p.license_expiry_date) if p.license_expiry_date else None,
-                "status": p.status,
-            }
-            for p in personnel
-        ],
-        "expired_facilities": [
-            {
-                "id": str(f.id),
-                "facility_name": f.facility_name,
-                "facility_type": f.facility_type,
-                "lga": f.lga,
-                "license_number": f.license_number,
-                "license_expiry_date": str(f.license_expiry_date) if f.license_expiry_date else None,
-                "status": f.status,
-            }
-            for f in expired_facilities
-        ],
-        "expiring_facilities": [
-            {
-                "id": str(f.id),
-                "facility_name": f.facility_name,
-                "facility_type": f.facility_type,
-                "lga": f.lga,
-                "license_number": f.license_number,
-                "license_expiry_date": str(f.license_expiry_date) if f.license_expiry_date else None,
-                "status": f.status,
-            }
-            for f in expiring_facilities
-        ],
-        "expired_personnel": [
-            {
-                "id": str(p.id),
-                "full_name": p.full_name,
-                "profession": p.profession,
-                "license_number": p.license_number,
-                "license_expiry_date": str(p.license_expiry_date) if p.license_expiry_date else None,
-                "status": p.status,
-            }
-            for p in expired_personnel
-        ],
-        "expiring_personnel": [
-            {
-                "id": str(p.id),
-                "full_name": p.full_name,
-                "profession": p.profession,
-                "license_number": p.license_number,
-                "license_expiry_date": str(p.license_expiry_date) if p.license_expiry_date else None,
-                "status": p.status,
-            }
-            for p in expiring_personnel
-        ],
+        "all_facilities": facilities,
+        "all_personnel": personnel,
+        "expired_facilities": expired_facilities,
+        "expiring_facilities": expiring_facilities,
+        "expired_personnel": expired_personnel,
+        "expiring_personnel": expiring_personnel,
+        "admin": {
+            "id": current_admin.id,
+            "full_name": current_admin.full_name,
+            "email": current_admin.email,
+        },
     }

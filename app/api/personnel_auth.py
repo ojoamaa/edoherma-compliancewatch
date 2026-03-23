@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
-from app.core.security import create_access_token, decode_token, verify_password
+from app.core.security import create_access_token, verify_password, verify_token
 from app.models.personnel import Personnel
 from app.schemas.admin import Token
 from app.schemas.personnel import PersonnelLogin, PersonnelMe
@@ -17,7 +17,7 @@ def get_current_personnel(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> Personnel:
-    payload = decode_token(token)
+    payload = verify_token(token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
