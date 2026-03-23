@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -18,9 +20,23 @@ from app.core.init_admin import create_default_admin
 import app.models  # noqa: F401
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+
+    db: Session = SessionLocal()
+    try:
+        create_default_admin(db)
+    finally:
+        db.close()
+
+    yield
+
+
 app = FastAPI(
     title="EdoHERMA ComplianceWatch",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -38,14 +54,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
-
-db: Session = SessionLocal()
-try:
-    create_default_admin(db)
-finally:
-    db.close()
-
 app.include_router(health.router)
 app.include_router(dashboard.router)
 app.include_router(facilities.router, prefix="/api/facilities", tags=["Facilities"])
@@ -60,6 +68,6 @@ app.include_router(personnel_auth.router, prefix="/api/personnel", tags=["Person
 def root():
     return {
         "app": "EdoHERMA ComplianceWatch",
-        "environment": "development",
+        "environment": "production",
         "message": "Welcome to EdoHERMA ComplianceWatch",
     }
