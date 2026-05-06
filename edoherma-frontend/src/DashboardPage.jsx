@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
+const API_BASE = "https://edoherma-compliancewatch-1-s9p4.onrender.com";
 
 const theme = {
     bg: "#F3F6FB",

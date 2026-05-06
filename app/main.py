@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from app.seeds.create_personnel import create_default_personnel
 
 from app.api import (
     admin_auth,
@@ -39,8 +40,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 Base.metadata.create_all(bind=engine)
+
+create_default_personnel()
 
 db: Session = SessionLocal()
 try:

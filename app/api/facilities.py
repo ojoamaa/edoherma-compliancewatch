@@ -10,7 +10,7 @@ from app.models.facility import Facility
 from app.schemas.facility import FacilityCreate, FacilityOut
 from app.api.admin_auth import require_roles
 
-router = APIRouter(tags=["Facilities"])
+router = APIRouter(prefix="/facilities", tags=["Facilities"])
 
 
 def compute_status(expiry_date: date) -> str:
@@ -89,3 +89,20 @@ def get_facility(facility_id: UUID, db: Session = Depends(get_db)):
 def get_lgas(db: Session = Depends(get_db)):
     lgas = db.query(Facility.lga).distinct().all()
     return [item[0] for item in lgas if item[0]]
+
+
+
+@router.get("/")
+def get_facilities():
+    return [
+        {
+            "id": 1,
+            "name": "Central Hospital",
+            "status": "Active"
+        },
+        {
+            "id": 2,
+            "name": "Community Clinic",
+            "status": "Pending"
+        }
+    ]

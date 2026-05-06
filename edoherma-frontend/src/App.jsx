@@ -5,8 +5,7 @@ import PersonnelPage from "./PersonnelPage";
 
 const TOKEN_KEY = "edoherma_token";
 const USER_TYPE_KEY = "edoherma_user_type";
-const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
-
+const API_BASE = "https://edoherma-compliancewatch-1-s9p4.onrender.com";
 export default function App() {
     const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || "");
     const [userType, setUserType] = useState(localStorage.getItem(USER_TYPE_KEY) || "");
@@ -26,12 +25,16 @@ export default function App() {
             }
 
             try {
+                if (userType === "admin") {
+                    setProfile({ full_name: "Administrator" });
+                    setCheckingAuth(false);
+                    return;
+                }
+
                 const endpoint =
-                    userType === "admin"
-                        ? "/api/admin/me"
-                        : userType === "personnel"
-                            ? "/api/personnel/me"
-                            : null;
+                    userType === "personnel"
+                        ? "/api/personnel/me"
+                        : null;
 
                 if (!endpoint) {
                     throw new Error("Unknown user type");

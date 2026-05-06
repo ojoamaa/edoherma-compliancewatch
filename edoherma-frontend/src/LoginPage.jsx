@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 
-const API_BASE = "https://edoherma-compliancewatch-1.onrender.com";
-
+const API_BASE = "https://edoherma-compliancewatch-1-s9p4.onrender.com";
 const theme = {
     bg: "#F3F6FB",
     card: "#FFFFFF",
@@ -21,9 +20,8 @@ const DEFAULT_ADMIN = {
 
 const DEFAULT_PERSONNEL = {
     email: "osagie@edoherma.com",
-    password: "Password123!",
+    password: "password123",
 };
-
 export default function LoginPage({ onLoginSuccess }) {
     const [loginType, setLoginType] = useState("admin");
     const [email, setEmail] = useState(DEFAULT_ADMIN.email);
