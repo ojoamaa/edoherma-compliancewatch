@@ -16,6 +16,7 @@ class Personnel(Base):
     profession: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     license_number: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     regulatory_body: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     facility_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

@@ -11,9 +11,11 @@ from app.api import (
     health,
     personnel,
     personnel_auth,
+    reminder,
 )
 from app.core.database import Base, SessionLocal, engine
 from app.core.init_admin import create_default_admin
+from app.core.config import settings
 
 import app.models  # noqa: F401
 
@@ -49,12 +51,12 @@ finally:
 app.include_router(health.router)
 app.include_router(dashboard.router)
 app.include_router(facilities.router, prefix="/api/facilities", tags=["Facilities"])
-app.include_router(personnel.router, prefix="/api/personnel", tags=["Personnel"])
+app.include_router(personnel.router)
 app.include_router(compliance.router, prefix="/api/compliance", tags=["Compliance"])
 app.include_router(dev.router, prefix="/api/dev", tags=["Development"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["Admin Auth"])
-app.include_router(personnel_auth.router, prefix="/api/personnel", tags=["Personnel Auth"])
-
+app.include_router(personnel_auth.router)
+app.include_router(reminder.router)
 
 @app.get("/")
 def root():

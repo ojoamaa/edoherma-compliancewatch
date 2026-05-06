@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -8,16 +8,20 @@ from app.models.personnel import Personnel
 from app.schemas.admin import Token
 from app.schemas.personnel import PersonnelLogin, PersonnelMe
 
-router = APIRouter(tags=["Personnel Auth"])
+router = APIRouter(prefix="/api/personnel", tags=["Personnel Auth"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/personnel/login")
-
+bearer_scheme = HTTPBearer()
 
 def get_current_personnel(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> Personnel:
+    token = credentials.credentials
+    print("PERSONNEL RAW TOKEN:", token)
+
     payload = verify_token(token)
+    print("PERSONNEL TOKEN PAYLOAD:", payload)
+
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -10,8 +10,6 @@ const theme = {
     muted: "#64748B",
     primary: "#1D4ED8",
     primarySoft: "#DBEAFE",
-    successBg: "#DCFCE7",
-    successText: "#166534",
     dangerBg: "#FEE2E2",
     dangerText: "#991B1B",
 };
@@ -32,6 +30,8 @@ export default function LoginPage({ onLoginSuccess }) {
     const [password, setPassword] = useState(DEFAULT_ADMIN.password);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const isAdmin = loginType === "admin";
 
     function switchToAdmin() {
         setLoginType("admin");
@@ -135,8 +135,6 @@ export default function LoginPage({ onLoginSuccess }) {
         }
     }
 
-    const isAdmin = loginType === "admin";
-
     return (
         <div style={styles.page}>
             <div style={styles.wrapper}>
@@ -144,9 +142,15 @@ export default function LoginPage({ onLoginSuccess }) {
                     <div style={styles.pill}>EdoHERMA ComplianceWatch</div>
                     <h1 style={styles.heroTitle}>Compliance monitoring made clearer.</h1>
                     <p style={styles.heroText}>
-                        Sign in as an administrator or personnel user to access the live compliance
-                        dashboard and profile portal.
+                        Sign in as an administrator or personnel user to access the live
+                        compliance dashboard and profile portal.
                     </p>
+
+                    <div style={styles.infoList}>
+                        <div style={styles.infoItem}>Admin dashboard with compliance overview</div>
+                        <div style={styles.infoItem}>Personnel profile and license visibility</div>
+                        <div style={styles.infoItem}>Search, filters, and export-ready records</div>
+                    </div>
                 </div>
 
                 <form style={styles.card} onSubmit={handleSubmit}>
@@ -225,7 +229,7 @@ const styles = {
     page: {
         minHeight: "100vh",
         background: theme.bg,
-        padding: 24,
+        padding: 20,
         fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
         display: "flex",
         alignItems: "center",
@@ -235,7 +239,7 @@ const styles = {
         width: "100%",
         maxWidth: 1180,
         display: "grid",
-        gridTemplateColumns: "1fr 520px",
+        gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 520px)",
         gap: 28,
         alignItems: "center",
     },
@@ -254,7 +258,7 @@ const styles = {
     },
     heroTitle: {
         margin: 0,
-        fontSize: 48,
+        fontSize: "clamp(32px, 6vw, 48px)",
         lineHeight: 1.05,
         fontWeight: 800,
         color: theme.text,
@@ -269,6 +273,22 @@ const styles = {
         lineHeight: 1.6,
         maxWidth: 540,
     },
+    infoList: {
+        marginTop: 24,
+        display: "grid",
+        gap: 12,
+        maxWidth: 520,
+    },
+    infoItem: {
+        background: "#FFFFFF",
+        border: `1px solid ${theme.border}`,
+        borderRadius: 14,
+        padding: "14px 16px",
+        color: "#334155",
+        fontSize: 15,
+        fontWeight: 600,
+        boxShadow: "0 6px 18px rgba(15, 23, 42, 0.04)",
+    },
     card: {
         width: "100%",
         background: theme.card,
@@ -276,14 +296,17 @@ const styles = {
         borderRadius: 24,
         padding: 32,
         boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+        boxSizing: "border-box",
     },
     switchWrap: {
         display: "flex",
         gap: 12,
         marginBottom: 20,
+        flexWrap: "wrap",
     },
     switchButton: {
         flex: 1,
+        minWidth: 140,
         padding: "12px 14px",
         borderRadius: 14,
         border: "1px solid #CBD5E1",

@@ -96,7 +96,13 @@ export default function App() {
     if (checkingAuth) {
         return (
             <div style={styles.loadingWrap}>
-                <div style={styles.loadingCard}>Checking session...</div>
+                <div style={styles.loadingCard}>
+                    <div style={styles.loadingPill}>EdoHERMA ComplianceWatch</div>
+                    <h2 style={styles.loadingTitle}>Checking session...</h2>
+                    <p style={styles.loadingText}>
+                        Please wait while we verify your access and restore your workspace.
+                    </p>
+                </div>
             </div>
         );
     }
@@ -138,15 +144,37 @@ const styles = {
         padding: 24,
     },
     loadingCard: {
+        width: "100%",
+        maxWidth: 560,
         background: "#FFFFFF",
         border: "1px solid #E5E7EB",
-        borderRadius: "18px",
-        padding: "24px 32px",
-        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
-        fontSize: "18px",
-        fontWeight: 600,
-        color: "#334155",
-        maxWidth: 520,
-        lineHeight: 1.7,
+        borderRadius: 24,
+        padding: 32,
+        boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+        textAlign: "center",
+    },
+    loadingPill: {
+        display: "inline-block",
+        padding: "6px 12px",
+        borderRadius: 999,
+        background: "#DBEAFE",
+        color: "#1D4ED8",
+        fontSize: 12,
+        fontWeight: 700,
+        marginBottom: 16,
+    },
+    loadingTitle: {
+        margin: 0,
+        fontSize: 28,
+        fontWeight: 800,
+        color: "#0F172A",
+        lineHeight: 1.1,
+    },
+    loadingText: {
+        marginTop: 12,
+        marginBottom: 0,
+        fontSize: 16,
+        lineHeight: 1.6,
+        color: "#64748B",
     },
 };

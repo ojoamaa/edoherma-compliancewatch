@@ -7,6 +7,7 @@ const theme = {
     text: "#0F172A",
     muted: "#64748B",
     primary: "#1D4ED8",
+    primarySoft: "#DBEAFE",
     successBg: "#DCFCE7",
     successText: "#166534",
     warningBg: "#FEF3C7",
@@ -27,6 +28,8 @@ function formatDateTime(value) {
 }
 
 function StatusBadge({ value, active }) {
+    const normalized = (value || "").toLowerCase();
+
     let badgeStyle = {
         display: "inline-block",
         padding: "6px 12px",
@@ -36,13 +39,13 @@ function StatusBadge({ value, active }) {
         whiteSpace: "nowrap",
     };
 
-    if (active === true || value === "Active") {
+    if (active === true || normalized === "active") {
         badgeStyle = {
             ...badgeStyle,
             background: theme.successBg,
             color: theme.successText,
         };
-    } else if (value === "Expired" || active === false) {
+    } else if (normalized === "expired" || active === false) {
         badgeStyle = {
             ...badgeStyle,
             background: theme.dangerBg,
@@ -56,7 +59,7 @@ function StatusBadge({ value, active }) {
         };
     }
 
-    return <span style={badgeStyle}>{value}</span>;
+    return <span style={badgeStyle}>{value || "Unknown"}</span>;
 }
 
 function InfoCard({ label, children }) {
@@ -89,6 +92,25 @@ export default function PersonnelPage({ personnel, onLogout }) {
                         </button>
                     </div>
 
+                    <div style={styles.summaryRow}>
+                        <div style={styles.summaryCard}>
+                            <div style={styles.summaryLabel}>License Status</div>
+                            <div style={styles.summaryValue}>
+                                <StatusBadge value={personnel?.status || "Unknown"} />
+                            </div>
+                        </div>
+
+                        <div style={styles.summaryCard}>
+                            <div style={styles.summaryLabel}>Account Status</div>
+                            <div style={styles.summaryValue}>
+                                <StatusBadge
+                                    value={personnel?.is_active ? "Active" : "Inactive"}
+                                    active={personnel?.is_active}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     <div style={styles.grid}>
                         <InfoCard label="Full Name">
                             {personnel?.full_name || "-"}
@@ -100,13 +122,6 @@ export default function PersonnelPage({ personnel, onLogout }) {
 
                         <InfoCard label="Email">
                             {personnel?.email || "-"}
-                        </InfoCard>
-
-                        <InfoCard label="Account Status">
-                            <StatusBadge
-                                value={personnel?.is_active ? "Active" : "Inactive"}
-                                active={personnel?.is_active}
-                            />
                         </InfoCard>
 
                         <InfoCard label="License Number">
@@ -125,10 +140,6 @@ export default function PersonnelPage({ personnel, onLogout }) {
                             {personnel?.lga || "-"}
                         </InfoCard>
 
-                        <InfoCard label="License Status">
-                            <StatusBadge value={personnel?.status || "-"} />
-                        </InfoCard>
-
                         <InfoCard label="Created At">
                             {formatDateTime(personnel?.created_at)}
                         </InfoCard>
@@ -143,7 +154,7 @@ const styles = {
     page: {
         minHeight: "100vh",
         background: theme.bg,
-        padding: 24,
+        padding: 20,
         fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
     },
     container: {
@@ -169,7 +180,7 @@ const styles = {
         display: "inline-block",
         padding: "6px 12px",
         borderRadius: 999,
-        background: "#DBEAFE",
+        background: theme.primarySoft,
         color: theme.primary,
         fontWeight: 700,
         fontSize: 12,
@@ -187,7 +198,7 @@ const styles = {
     },
     title: {
         margin: 0,
-        fontSize: 42,
+        fontSize: "clamp(30px, 5vw, 42px)",
         lineHeight: 1.05,
         fontWeight: 800,
         color: theme.text,
@@ -199,6 +210,31 @@ const styles = {
         marginTop: 12,
         marginBottom: 0,
         lineHeight: 1.5,
+    },
+    summaryRow: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 16,
+        marginBottom: 20,
+    },
+    summaryCard: {
+        border: `1px solid ${theme.border}`,
+        borderRadius: 18,
+        padding: 18,
+        background: "#FFFFFF",
+    },
+    summaryLabel: {
+        fontSize: 12,
+        fontWeight: 800,
+        color: theme.muted,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        marginBottom: 10,
+    },
+    summaryValue: {
+        fontSize: 18,
+        fontWeight: 700,
+        color: theme.text,
     },
     grid: {
         display: "grid",

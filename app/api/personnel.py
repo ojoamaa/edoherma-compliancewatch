@@ -1,4 +1,5 @@
 from datetime import date
+from app.api.access_control import require_production_unlock
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -10,7 +11,7 @@ from app.models.facility import Facility
 from app.models.personnel import Personnel
 from app.schemas.personnel import PersonnelCreate, PersonnelOut
 
-router = APIRouter()
+router = APIRouter(prefix="/api/personnel", tags=["Personnel"])
 
 
 def compute_status(expiry_date: date) -> str:
@@ -24,11 +25,16 @@ def compute_status(expiry_date: date) -> str:
     return "Active"
 
 
-@router.post("/", response_model=PersonnelOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=PersonnelOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_production_unlock)],
+)
 def create_personnel(
     payload: PersonnelCreate,
     db: Session = Depends(get_db),
-    current_admin=Depends(require_roles("admin_manager", "data_officer")),
+    current_admin=Depends(require_roles("admin", "admin_manager", "data_officer")),
 ):
     facility = None
     if payload.facility_id:
@@ -36,20 +42,13 @@ def create_personnel(
         if not facility:
             raise HTTPException(status_code=404, detail="Facility not found")
 
-    existing_license = (
-        db.query(Personnel)
-        .filter(Personnel.license_number == payload.license_number)
-        .first()
-    )
-    if existing_license:
+    # validations
+    if db.query(Personnel).filter(Personnel.license_number == payload.license_number).first():
         raise HTTPException(status_code=400, detail="License number already exists")
 
     if payload.email:
-        existing_email = db.query(Personnel).filter(Personnel.email == payload.email).first()
-        if existing_email:
+        if db.query(Personnel).filter(Personnel.email == payload.email).first():
             raise HTTPException(status_code=400, detail="Email already exists")
-
-    hashed_password = get_password_hash(payload.password) if payload.password else None
 
     person = Personnel(
         full_name=payload.full_name,
@@ -58,7 +57,7 @@ def create_personnel(
         regulatory_body=payload.regulatory_body,
         facility_id=payload.facility_id,
         email=payload.email,
-        hashed_password=hashed_password,
+        hashed_password=get_password_hash(payload.password) if payload.password else None,
         license_expiry_date=payload.license_expiry_date,
         status=compute_status(payload.license_expiry_date),
         is_active=True,
@@ -87,11 +86,7 @@ def create_personnel(
 
 @router.get("/", response_model=list[PersonnelOut])
 def list_personnel(db: Session = Depends(get_db)):
-    records = (
-        db.query(Personnel)
-        .options(joinedload(Personnel.facility))
-        .all()
-    )
+    records = db.query(Personnel).options(joinedload(Personnel.facility)).all()
 
     return [
         PersonnelOut(

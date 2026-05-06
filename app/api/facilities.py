@@ -1,5 +1,6 @@
 from datetime import date
 from uuid import UUID
+from app.api.access_control import require_production_unlock
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -23,7 +24,11 @@ def compute_status(expiry_date: date) -> str:
     return "Active"
 
 
-@router.post("/", response_model=FacilityOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_production_unlock)],
+)
 def create_facility(
     payload: FacilityCreate,
     db: Session = Depends(get_db),

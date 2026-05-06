@@ -9,7 +9,6 @@ const theme = {
     text: "#0F172A",
     muted: "#64748B",
     primary: "#1D4ED8",
-    primaryHover: "#1E40AF",
     primarySoft: "#DBEAFE",
     successBg: "#DCFCE7",
     successText: "#166534",
@@ -29,31 +28,17 @@ const cardStyle = {
 
 function formatDate(value) {
     if (!value) return "-";
-
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-
     return date.toLocaleDateString();
 }
 
 function MetricCard({ title, value, tone = "default" }) {
     const accentStyles = {
-        default: {
-            background: "#FFFFFF",
-            borderLeft: `5px solid ${theme.primary}`,
-        },
-        success: {
-            background: "#FFFFFF",
-            borderLeft: `5px solid ${theme.successText}`,
-        },
-        warning: {
-            background: "#FFFFFF",
-            borderLeft: `5px solid ${theme.warningText}`,
-        },
-        danger: {
-            background: "#FFFFFF",
-            borderLeft: `5px solid ${theme.dangerText}`,
-        },
+        default: { borderLeft: `5px solid ${theme.primary}` },
+        success: { borderLeft: `5px solid ${theme.successText}` },
+        warning: { borderLeft: `5px solid ${theme.warningText}` },
+        danger: { borderLeft: `5px solid ${theme.dangerText}` },
     };
 
     return (
@@ -87,6 +72,8 @@ function MiniBar({ label, value, total }) {
 }
 
 function StatusBadge({ value }) {
+    const normalized = (value || "").toLowerCase();
+
     const style = {
         padding: "6px 12px",
         borderRadius: "999px",
@@ -96,10 +83,10 @@ function StatusBadge({ value }) {
         whiteSpace: "nowrap",
     };
 
-    if (value === "Active") {
+    if (normalized === "active") {
         style.background = theme.successBg;
         style.color = theme.successText;
-    } else if (value === "Expired") {
+    } else if (normalized === "expired") {
         style.background = theme.dangerBg;
         style.color = theme.dangerText;
     } else {
@@ -138,7 +125,7 @@ function SectionTable({ title, columns, rows, emptyMessage }) {
                             </tr>
                         ) : (
                             rows.map((row, rowIdx) => (
-                                <tr key={rowIdx} style={styles.tr}>
+                                <tr key={rowIdx}>
                                     {row.map((cell, cellIdx) => (
                                         <td key={`${rowIdx}-${cellIdx}`} style={styles.td}>
                                             {cell}
@@ -157,6 +144,7 @@ function SectionTable({ title, columns, rows, emptyMessage }) {
 export default function DashboardPage({ token, admin, onLogout }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
 
     const [search, setSearch] = useState("");
@@ -182,14 +170,19 @@ export default function DashboardPage({ token, admin, onLogout }) {
         }
     }
 
-    const loadDashboard = async () => {
+    const loadDashboard = async ({ silent = false } = {}) => {
         if (!token) {
             setError("Missing admin token.");
             setLoading(false);
             return;
         }
 
-        setLoading(true);
+        if (silent) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+
         setError("");
 
         try {
@@ -203,9 +196,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
             if (!response.ok) {
                 const message = await parseErrorResponse(response);
-                throw new Error(
-                    message || `Dashboard request failed with status ${response.status}`
-                );
+                throw new Error(message || `Dashboard request failed with status ${response.status}`);
             }
 
             const json = await response.json();
@@ -214,11 +205,20 @@ export default function DashboardPage({ token, admin, onLogout }) {
             setError(err?.message || "Unable to load dashboard data.");
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
     useEffect(() => {
         loadDashboard();
+    }, [token]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadDashboard({ silent: true });
+        }, 20000);
+
+        return () => clearInterval(interval);
     }, [token]);
 
     const allPersonnel = useMemo(() => data?.all_personnel || [], [data]);
@@ -231,15 +231,15 @@ export default function DashboardPage({ token, admin, onLogout }) {
     const searchLower = appliedSearch.trim().toLowerCase();
 
     const professionOptions = useMemo(() => {
-        return Array.from(
-            new Set(allPersonnel.map((item) => item.profession).filter(Boolean))
-        ).sort((a, b) => a.localeCompare(b));
+        return Array.from(new Set(allPersonnel.map((item) => item.profession).filter(Boolean))).sort(
+            (a, b) => a.localeCompare(b)
+        );
     }, [allPersonnel]);
 
     const lgaOptions = useMemo(() => {
-        return Array.from(
-            new Set(allFacilities.map((item) => item.lga).filter(Boolean))
-        ).sort((a, b) => a.localeCompare(b));
+        return Array.from(new Set(allFacilities.map((item) => item.lga).filter(Boolean))).sort(
+            (a, b) => a.localeCompare(b)
+        );
     }, [allFacilities]);
 
     const filterPersonnel = (items = []) =>
@@ -265,7 +265,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
             const matchesStatus =
                 statusFilter === "all" ||
-                status === statusFilter.toLowerCase();
+                status === statusFilter;
 
             return matchesSearch && matchesProfession && matchesStatus;
         });
@@ -291,7 +291,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
             const matchesStatus =
                 statusFilter === "all" ||
-                status === statusFilter.toLowerCase();
+                status === statusFilter;
 
             return matchesSearch && matchesLga && matchesStatus;
         });
@@ -327,12 +327,8 @@ export default function DashboardPage({ token, admin, onLogout }) {
     );
 
     const exportCsv = (filename, headers, rows) => {
-        const escapeCell = (value) =>
-            `"${String(value ?? "").replace(/"/g, '""')}"`;
-
-        const csv = [headers, ...rows]
-            .map((row) => row.map(escapeCell).join(","))
-            .join("\n");
+        const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+        const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(",")).join("\n");
 
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
@@ -497,8 +493,8 @@ export default function DashboardPage({ token, admin, onLogout }) {
                             <button style={styles.secondaryButton} onClick={onLogout}>
                                 Logout
                             </button>
-                            <button style={styles.primaryButton} onClick={loadDashboard}>
-                                Refresh Dashboard
+                            <button style={styles.primaryButton} onClick={() => loadDashboard()}>
+                                {refreshing ? "Refreshing..." : "Refresh Dashboard"}
                             </button>
                         </div>
                     </div>
@@ -560,9 +556,9 @@ export default function DashboardPage({ token, admin, onLogout }) {
                                 onChange={(e) => setStatusFilter(e.target.value)}
                             >
                                 <option value="all">All Statuses</option>
-                                <option value="Active">Active</option>
-                                <option value="Expired">Expired</option>
-                                <option value="Expiring Soon">Expiring Soon</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                                <option value="expiring soon">Expiring Soon</option>
                             </select>
                         </div>
 
@@ -803,7 +799,7 @@ const styles = {
     },
     title: {
         margin: 0,
-        fontSize: "44px",
+        fontSize: "clamp(30px, 5vw, 44px)",
         lineHeight: 1.05,
         fontWeight: 800,
         color: theme.text,
@@ -822,7 +818,7 @@ const styles = {
     },
     primaryButton: {
         minWidth: "140px",
-        height: "44px",
+        minHeight: "44px",
         background: theme.primary,
         color: "#fff",
         border: "none",
@@ -834,7 +830,7 @@ const styles = {
     },
     secondaryButton: {
         minWidth: "120px",
-        height: "44px",
+        minHeight: "44px",
         background: "#fff",
         color: theme.text,
         border: `1px solid ${theme.border}`,
@@ -846,12 +842,13 @@ const styles = {
     },
     filterGrid: {
         display: "grid",
-        gridTemplateColumns: "2fr 1fr 1fr 1fr auto",
+        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: "14px",
         alignItems: "end",
     },
     filterColWide: {
         minWidth: 0,
+        gridColumn: "span 2",
     },
     actionCol: {
         display: "flex",
@@ -879,7 +876,7 @@ const styles = {
     },
     metricsGrid: {
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
         gap: "14px",
         marginBottom: "14px",
     },
@@ -905,7 +902,7 @@ const styles = {
     },
     twoColGrid: {
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
         gap: "16px",
         marginBottom: "16px",
     },
@@ -966,7 +963,7 @@ const styles = {
     },
     exportGrid: {
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
         gap: "12px",
     },
     exportButton: {
@@ -983,7 +980,7 @@ const styles = {
     },
     tablesGrid: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(520px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
         gap: "16px",
     },
     tableWrap: {
@@ -1010,9 +1007,6 @@ const styles = {
         fontSize: "13px",
         borderBottom: `1px solid ${theme.border}`,
         zIndex: 1,
-    },
-    tr: {
-        transition: "background 0.2s ease",
     },
     td: {
         padding: "12px 10px",
