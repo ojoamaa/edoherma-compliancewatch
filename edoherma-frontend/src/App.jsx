@@ -26,15 +26,15 @@ export default function App() {
 
             try {
                 if (userType === "admin") {
-                    setProfile({ full_name: "Administrator" });
-                    setCheckingAuth(false);
-                    return;
-                }
+    setProfile({ full_name: "Administrator" });
+    setCheckingAuth(false);
+    return;
+}
 
-                const endpoint =
-                    userType === "personnel"
-                        ? "/api/personnel/me"
-                        : null;
+const endpoint =
+    userType === "personnel"
+        ? "/api/personnel/me"
+        : null;
 
                 if (!endpoint) {
                     throw new Error("Unknown user type");

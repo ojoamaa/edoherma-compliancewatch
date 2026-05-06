@@ -22,7 +22,6 @@ def create_default_personnel():
             profession="Doctor",
             license_number="MDCN-1001",
             regulatory_body="MDCN",
-            facility_name="GraceVeil Hospital",
             lga="Egor",
             status="Active",
             is_active=True,
