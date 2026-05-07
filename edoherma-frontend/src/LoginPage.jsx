@@ -232,17 +232,19 @@ const styles = {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        overflowX: "hidden",
     },
     wrapper: {
         width: "100%",
         maxWidth: 1180,
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 520px)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
         gap: 28,
         alignItems: "center",
     },
     brandBlock: {
         padding: "12px 8px",
+        textAlign: "left",
     },
     pill: {
         display: "inline-block",
@@ -289,6 +291,8 @@ const styles = {
     },
     card: {
         width: "100%",
+        maxWidth: 520,
+        margin: "0 auto",
         background: theme.card,
         border: `1px solid ${theme.border}`,
         borderRadius: 24,
