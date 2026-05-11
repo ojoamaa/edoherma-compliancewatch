@@ -171,38 +171,46 @@ export default function DashboardPage({ token, admin, onLogout }) {
     }
 
     const loadDashboard = async ({ silent = false } = {}) => {
-        if (!token) {
-            setError("Missing admin token.");
-            setLoading(false);
-            return;
-        }
-
-        if (silent) {
-            setRefreshing(true);
-        } else {
-            setLoading(true);
-        }
-
-        setError("");
-
         try {
+            if (!silent) {
+                setLoading(true);
+            }
+
+            setRefreshing(true);
+            setError("");
+
             const response = await fetch(`${API_BASE}/api/dashboard/overview`, {
                 method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    Accept: "application/json",
                 },
             });
 
             if (!response.ok) {
                 const message = await parseErrorResponse(response);
-                throw new Error(message || `Dashboard request failed with status ${response.status}`);
+                throw new Error(message || `Request failed with status ${response.status}`);
             }
 
-            const json = await response.json();
-            setData(json);
+            const result = await response.json();
+            setData(result);
         } catch (err) {
-            setError(err?.message || "Unable to load dashboard data.");
+            const message = err?.message || "Unable to load dashboard data.";
+
+            if (
+                message.toLowerCase().includes("token") ||
+                message.toLowerCase().includes("unauthorized") ||
+                message.toLowerCase().includes("401")
+            ) {
+                localStorage.clear();
+
+                if (onLogout) {
+                    onLogout();
+                }
+
+                return;
+            }
+
+            setError(message);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -210,16 +218,21 @@ export default function DashboardPage({ token, admin, onLogout }) {
     };
 
     useEffect(() => {
-        loadDashboard();
+        if (token) {
+            loadDashboard();
+        } else {
+            setLoading(false);
+        }
     }, [token]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            loadDashboard({ silent: true });
-        }, 20000);
-
-        return () => clearInterval(interval);
-    }, [token]);
+    // Auto-refresh temporarily disabled for stability
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         loadDashboard({ silent: true });
+    //     }, 20000);
+    //
+    //     return () => clearInterval(interval);
+    // }, [token]);
 
     const allPersonnel = useMemo(() => data?.all_personnel || [], [data]);
     const allFacilities = useMemo(() => data?.all_facilities || [], [data]);
@@ -438,9 +451,9 @@ export default function DashboardPage({ token, admin, onLogout }) {
 
     if (loading) {
         return (
-            <div style={styles.page}>
-                <div style={styles.container}>
-                    <div style={styles.infoBox}>Loading admin dashboard...</div>
+            <div style={styles.loadingWrap}>
+                <div style={styles.loadingCard}>
+                    Loading admin dashboard...
                 </div>
             </div>
         );
@@ -1028,6 +1041,24 @@ const styles = {
         fontSize: "18px",
         fontWeight: 600,
         color: "#334155",
+    },
+    loadingWrap: {
+        minHeight: "100vh",
+        background: theme.bg,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+    },
+
+    loadingCard: {
+        background: theme.card,
+        border: `1px solid ${theme.border}`,
+        borderRadius: 20,
+        padding: "24px 32px",
+        boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
+        color: theme.text,
+        fontWeight: 700,
     },
     errorBox: {
         maxWidth: "700px",

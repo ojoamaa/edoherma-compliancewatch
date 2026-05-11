@@ -22,7 +22,7 @@ const DEFAULT_PERSONNEL = {
     email: "osagie@edoherma.com",
     password: "password123",
 };
-export default function LoginPage({ onLoginSuccess }) {
+export default function LoginPage({ onLoginSuccess, onOpenVerify }) {
     const [loginType, setLoginType] = useState("admin");
     const [email, setEmail] = useState(DEFAULT_ADMIN.email);
     const [password, setPassword] = useState(DEFAULT_ADMIN.password);
@@ -217,6 +217,13 @@ export default function LoginPage({ onLoginSuccess }) {
                                 ? "Sign In as Admin"
                                 : "Sign In as Personnel"}
                     </button>
+                    <button
+                        type="button"
+                        style={styles.verifyButton}
+                        onClick={onOpenVerify}
+                    >
+                        Verify License Publicly
+                    </button>
                 </form>
             </div>
         </div>
@@ -364,6 +371,18 @@ const styles = {
         boxSizing: "border-box",
         outline: "none",
         background: "#FFFFFF",
+    },
+    verifyButton: {
+        width: "100%",
+        marginTop: 12,
+        padding: "13px 18px",
+        borderRadius: 14,
+        border: "1px solid #93C5FD",
+        background: "#FFFFFF",
+        color: "#1D4ED8",
+        fontSize: 15,
+        fontWeight: 700,
+        cursor: "pointer",
     },
     button: {
         width: "100%",
