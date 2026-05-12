@@ -9,6 +9,8 @@ export default function PublicVerifyPage({ onBack }) {
     const [result, setResult] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const isVerified = result && result.verified === true;
+
     function handlePrint() {
         window.print();
     }
@@ -94,13 +96,15 @@ export default function PublicVerifyPage({ onBack }) {
                         </div>
                     </div>
                 )}
-                <button
-                    className="no-print"
-                    style={styles.printButton}
-                    onClick={handlePrint}
-                >
-                    Print Verification Certificate
-                </button>
+                {isVerified && (
+                    <button
+                        className="no-print"
+                        style={styles.printButton}
+                        onClick={handlePrint}
+                    >
+                        Print Verification Certificate
+                    </button>
+                )}
 
                 <button className="no-print" style={styles.backButton} onClick={onBack}>
                     Back to Login
@@ -114,9 +118,9 @@ const styles = {
     page: {
         minHeight: "100vh",
         background: "#F3F6FB",
-        padding: 20,
+        padding: "16px",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
         fontFamily: "Inter, system-ui, sans-serif",
     },
@@ -126,9 +130,11 @@ const styles = {
         maxWidth: 720,
         background: "#FFFFFF",
         borderRadius: 24,
-        padding: 32,
+        padding: "clamp(20px, 5vw, 32px)",
         boxShadow: "0 10px 24px rgba(15,23,42,0.08)",
         border: "1px solid #E5E7EB",
+        marginTop: "clamp(20px, 6vh, 60px)",
+        boxSizing: "border-box",
     },
 
     badge: {
@@ -143,7 +149,8 @@ const styles = {
 
     title: {
         margin: 0,
-        fontSize: "clamp(30px, 6vw, 46px)",
+        fontSize: "clamp(32px, 8vw, 46px)",
+        lineHeight: 1.1,
         color: "#0F172A",
     },
 
@@ -162,11 +169,13 @@ const styles = {
 
     input: {
         flex: 1,
-        minWidth: 240,
+        minWidth: 0,
+        width: "100%",
         padding: "14px 16px",
         borderRadius: 14,
         border: "1px solid #CBD5E1",
         fontSize: 16,
+        boxSizing: "border-box",
     },
 
     button: {
@@ -177,6 +186,7 @@ const styles = {
         color: "#FFFFFF",
         fontWeight: 700,
         cursor: "pointer",
+        minWidth: 160,
     },
 
     error: {
@@ -190,12 +200,13 @@ const styles = {
 
     resultCard: {
         marginTop: 24,
-        padding: 22,
+        padding: "clamp(18px, 4vw, 22px)",
         borderRadius: 18,
         background: "#F8FAFC",
         border: "1px solid #E2E8F0",
         color: "#334155",
         lineHeight: 1.7,
+        overflowWrap: "break-word",
     },
 
     resultTitle: {
@@ -205,7 +216,7 @@ const styles = {
 
     qrBox: {
         marginTop: 20,
-        padding: 18,
+        padding: 16,
         borderRadius: 16,
         background: "#FFFFFF",
         border: "1px solid #E5E7EB",
@@ -213,9 +224,10 @@ const styles = {
         alignItems: "center",
         gap: 16,
         flexWrap: "wrap",
+        overflow: "hidden",
     },
 
-       qrText: {
+    qrText: {
         margin: 0,
         color: "#64748B",
         fontSize: 14,
@@ -224,6 +236,7 @@ const styles = {
 
     printButton: {
         marginTop: 20,
+        marginRight: 10,
         background: "#166534",
         color: "#FFFFFF",
         border: "none",
@@ -235,7 +248,7 @@ const styles = {
     },
 
     backButton: {
-        marginTop: 22,
+        marginTop: 20,
         background: "#FFFFFF",
         border: "1px solid #CBD5E1",
         borderRadius: 14,
@@ -244,49 +257,3 @@ const styles = {
         fontWeight: 700,
     },
 };
-
-const printStyle = document.createElement("style");
-printStyle.innerHTML = `
-@media print {
-  html, body {
-    width: 210mm;
-    height: 297mm;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    background: white !important;
-  }
-
-  body * {
-    visibility: hidden !important;
-  }
-
-  .print-area, .print-area * {
-    visibility: visible !important;
-  }
-
-  .print-area {
-    position: fixed !important;
-    left: 12mm !important;
-    top: 12mm !important;
-    width: 186mm !important;
-    max-height: 260mm !important;
-    overflow: hidden !important;
-    background: white !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-}
-`;
-document.head.appendChild(printStyle);
