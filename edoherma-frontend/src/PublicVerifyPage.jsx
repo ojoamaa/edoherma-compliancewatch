@@ -50,135 +50,124 @@ export default function PublicVerifyPage({ onBack }) {
             verifyUrl
         )}`;
 
-        const printWindow = window.open(
-            "",
-            "_blank",
-            "width=900,height=700"
-        );
+        const content = `
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>License Verification Certificate</title>
 
-        printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-            <head>
-                <title>License Verification Certificate</title>
+            <style>
+                @page {
+                    size: A4 portrait;
+                    margin: 12mm;
+                }
 
-                <style>
-                    @page {
-                        size: A4 portrait;
-                        margin: 12mm;
-                    }
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 24px;
+                    background: #ffffff;
+                    color: #0F172A;
+                }
 
-                    body {
-                        font-family: Arial, sans-serif;
-                        margin: 0;
-                        padding: 0;
-                        background: #ffffff;
-                        color: #0F172A;
-                    }
+                .certificate {
+                    border: 1px solid #E5E7EB;
+                    border-radius: 16px;
+                    padding: 24px;
+                }
 
-                    .certificate {
-                        width: 100%;
-                        box-sizing: border-box;
-                        border: 1px solid #E5E7EB;
-                        border-radius: 16px;
-                        padding: 24px;
-                    }
+                h1 {
+                    color: #166534;
+                    margin-top: 0;
+                }
 
-                    h1 {
-                        margin-top: 0;
-                        color: #166534;
-                        font-size: 28px;
-                    }
+                p {
+                    line-height: 1.7;
+                    font-size: 14px;
+                }
 
-                    p {
-                        font-size: 14px;
-                        line-height: 1.6;
-                        margin: 8px 0;
-                    }
+                .qr-section {
+                    margin-top: 24px;
+                    display: flex;
+                    align-items: center;
+                    gap: 18px;
+                    border-top: 1px solid #E5E7EB;
+                    padding-top: 18px;
+                }
 
-                    .qr-section {
-                        margin-top: 24px;
-                        border-top: 1px solid #E5E7EB;
-                        padding-top: 18px;
-                        display: flex;
-                        align-items: center;
-                        gap: 18px;
-                    }
+                .footer {
+                    margin-top: 20px;
+                    color: #64748B;
+                    font-size: 12px;
+                }
+            </style>
+        </head>
 
-                    .qr-section img {
-                        width: 110px;
-                        height: 110px;
-                    }
+        <body>
+            <div class="certificate">
+                <h1>License Verified</h1>
 
-                    .footer {
-                        margin-top: 24px;
-                        font-size: 12px;
-                        color: #64748B;
-                    }
-                </style>
-            </head>
+                <p><strong>Name:</strong> ${result.full_name || ""}</p>
 
-            <body>
-                <div class="certificate">
-                    <h1>License Verified</h1>
+                <p><strong>Profession:</strong>
+                ${result.profession || ""}
+                </p>
 
-                    <p><strong>Name:</strong> ${result.full_name || ""}</p>
+                <p><strong>License No:</strong>
+                ${result.license_number || ""}
+                </p>
 
-                    <p><strong>Profession:</strong>
-                    ${result.profession || ""}
-                    </p>
+                <p><strong>Regulatory Body:</strong>
+                ${result.regulatory_body || ""}
+                </p>
 
-                    <p><strong>License No:</strong>
-                    ${result.license_number || ""}
-                    </p>
+                <p><strong>Status:</strong>
+                ${result.status || ""}
+                </p>
 
-                    <p><strong>Regulatory Body:</strong>
-                    ${result.regulatory_body || ""}
-                    </p>
+                <p><strong>Expiry Date:</strong>
+                ${result.license_expiry_date || ""}
+                </p>
 
-                    <p><strong>Status:</strong>
-                    ${result.status || ""}
-                    </p>
+                <p><strong>Facility:</strong>
+                ${result.facility_name || ""}
+                </p>
 
-                    <p><strong>Expiry Date:</strong>
-                    ${result.license_expiry_date || ""}
-                    </p>
+                <p><strong>LGA:</strong>
+                ${result.lga || ""}
+                </p>
 
-                    <p><strong>Facility:</strong>
-                    ${result.facility_name || ""}
-                    </p>
+                <p><strong>Message:</strong>
+                ${result.message || ""}
+                </p>
 
-                    <p><strong>LGA:</strong>
-                    ${result.lga || ""}
-                    </p>
+                <div class="qr-section">
+                    <img src="${qrUrl}" width="110" height="110" />
 
-                    <p><strong>Message:</strong>
-                    ${result.message || ""}
-                    </p>
-
-                    <div class="qr-section">
-                        <img src="${qrUrl}" alt="QR Code" />
-
-                        <div>
-                            <strong>
-                                Scan QR code to verify this license online.
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div class="footer">
-                        EdoHERMA ComplianceWatch Public Verification Certificate
+                    <div>
+                        Scan QR code to verify this license online.
                     </div>
                 </div>
 
-                <script>
-                    window.onload = function () {
-                        window.print();
-                    };
-                </script>
-            </body>
-        </html>
-        `);
+                <div class="footer">
+                    EdoHERMA ComplianceWatch Public Verification Certificate
+                </div>
+            </div>
+        </body>
+    </html>
+    `;
+
+        const printWindow = window.open("", "_blank");
+
+        printWindow.document.open();
+        printWindow.document.write(content);
+        printWindow.document.close();
+
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+        }, 700);
+    }
 
         printWindow.document.close();
     }
