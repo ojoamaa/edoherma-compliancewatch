@@ -1,7 +1,7 @@
 from app.core.database import SessionLocal
 from app.core.security import get_password_hash
 from app.models.personnel import Personnel
-from datetime import date
+from datetime import date, timedelta
 
 
 def create_default_personnel():
@@ -25,7 +25,7 @@ def create_default_personnel():
         regulatory_body="MDCN",
         phone_number="08000000000",
         facility_id=None,
-        license_expiry_date=date(2027, 12, 31),
+        license_expiry_date=date.today() + timedelta(days=14),
         status="Active",
         is_active=True,
     )

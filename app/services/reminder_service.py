@@ -20,14 +20,16 @@ def run_license_reminders(db: Session):
 
         days_left = (person.license_expiry_date - today).days
 
-        if days_left != 14:
+        if days_left not in [1, 7, 14, 30, 365]:
             continue
+
+        reminder_type = f"{days_left}_days"
 
         existing_log = (
             db.query(ReminderLog)
             .filter(
                 ReminderLog.personnel_id == person.id,
-                ReminderLog.reminder_type == "14_days",
+                ReminderLog.reminder_type == reminder_type,
             )
             .first()
         )
@@ -36,8 +38,9 @@ def run_license_reminders(db: Session):
             continue
 
         message = (
-            f"Dear {person.full_name}, your professional license will expire in "
-            f"14 days. Please renew promptly to remain compliant."
+            f"Dear {person.full_name}, your professional license "
+            f"will expire in {days_left} day(s). "
+            f"Please renew promptly to remain compliant with EdoHERMA regulations."
         )
 
         success = send_sms(person.phone_number, message)
@@ -45,7 +48,7 @@ def run_license_reminders(db: Session):
         log = ReminderLog(
             id=uuid.uuid4(),
             personnel_id=person.id,
-            reminder_type="14_days",
+            reminder_type=reminder_type,
             channel="sms",
             status="success" if success else "failed",
             message=message,

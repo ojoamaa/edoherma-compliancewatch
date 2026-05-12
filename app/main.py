@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.seeds.create_personnel import create_default_personnel
+from app.api import public_verify
 
 from app.api import (
     admin_auth,
@@ -59,6 +60,7 @@ app.include_router(dev.router, prefix="/api/dev", tags=["Development"])
 app.include_router(admin_auth.router, prefix="/api/admin", tags=["Admin Auth"])
 app.include_router(personnel_auth.router)
 app.include_router(reminder.router)
+app.include_router(public_verify.router)
 
 @app.get("/")
 def root():

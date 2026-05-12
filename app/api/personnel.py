@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from app.api.access_control import require_production_unlock
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -51,17 +51,18 @@ def create_personnel(
             raise HTTPException(status_code=400, detail="Email already exists")
 
     person = Personnel(
-        full_name=payload.full_name,
-        profession=payload.profession,
-        license_number=payload.license_number,
-        regulatory_body=payload.regulatory_body,
-        facility_id=payload.facility_id,
-        email=payload.email,
-        hashed_password=get_password_hash(payload.password) if payload.password else None,
-        license_expiry_date=payload.license_expiry_date,
-        status=compute_status(payload.license_expiry_date),
-        is_active=True,
-    )
+    full_name=payload.full_name,
+    phone_number=payload.phone_number,
+    profession=payload.profession,
+    license_number=payload.license_number,
+    regulatory_body=payload.regulatory_body,
+    facility_id=payload.facility_id,
+    email=payload.email,
+    hashed_password=get_password_hash(payload.password) if payload.password else None,
+    license_expiry_date=date.today() + timedelta(days=14),
+    status=compute_status(date.today() + timedelta(days=14)),
+    is_active=True,
+)
 
     db.add(person)
     db.commit()

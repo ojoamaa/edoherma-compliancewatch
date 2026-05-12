@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 
 class PersonnelCreate(BaseModel):
     full_name: str
+    phone_number: str | None = None
     profession: str
     license_number: str
     regulatory_body: str | None = None
