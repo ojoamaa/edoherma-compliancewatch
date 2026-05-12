@@ -1,26 +1,22 @@
 import React, { useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
-
+const API_BASE =
+    import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
 export default function PublicVerifyPage({ onBack }) {
     const [licenseNumber, setLicenseNumber] = useState("MDCN-1001");
     const [result, setResult] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const isVerified = result && result.verified === true;
 
-    function handlePrint() {
-        window.print();
-    }
     const verifyUrl = result
         ? `${window.location.origin}/?verify=${result.license_number}`
         : "";
 
-    
     async function verifyLicense(e) {
         e.preventDefault();
+
         setLoading(true);
         setError("");
         setResult(null);
@@ -44,42 +40,239 @@ export default function PublicVerifyPage({ onBack }) {
         }
     }
 
+    function handlePrint() {
+        if (!result) {
+            alert("Please verify a license first.");
+            return;
+        }
+
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
+            verifyUrl
+        )}`;
+
+        const printWindow = window.open(
+            "",
+            "_blank",
+            "width=900,height=700"
+        );
+
+        printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>License Verification Certificate</title>
+
+                <style>
+                    @page {
+                        size: A4 portrait;
+                        margin: 12mm;
+                    }
+
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background: #ffffff;
+                        color: #0F172A;
+                    }
+
+                    .certificate {
+                        width: 100%;
+                        box-sizing: border-box;
+                        border: 1px solid #E5E7EB;
+                        border-radius: 16px;
+                        padding: 24px;
+                    }
+
+                    h1 {
+                        margin-top: 0;
+                        color: #166534;
+                        font-size: 28px;
+                    }
+
+                    p {
+                        font-size: 14px;
+                        line-height: 1.6;
+                        margin: 8px 0;
+                    }
+
+                    .qr-section {
+                        margin-top: 24px;
+                        border-top: 1px solid #E5E7EB;
+                        padding-top: 18px;
+                        display: flex;
+                        align-items: center;
+                        gap: 18px;
+                    }
+
+                    .qr-section img {
+                        width: 110px;
+                        height: 110px;
+                    }
+
+                    .footer {
+                        margin-top: 24px;
+                        font-size: 12px;
+                        color: #64748B;
+                    }
+                </style>
+            </head>
+
+            <body>
+                <div class="certificate">
+                    <h1>License Verified</h1>
+
+                    <p><strong>Name:</strong> ${result.full_name || ""}</p>
+
+                    <p><strong>Profession:</strong>
+                    ${result.profession || ""}
+                    </p>
+
+                    <p><strong>License No:</strong>
+                    ${result.license_number || ""}
+                    </p>
+
+                    <p><strong>Regulatory Body:</strong>
+                    ${result.regulatory_body || ""}
+                    </p>
+
+                    <p><strong>Status:</strong>
+                    ${result.status || ""}
+                    </p>
+
+                    <p><strong>Expiry Date:</strong>
+                    ${result.license_expiry_date || ""}
+                    </p>
+
+                    <p><strong>Facility:</strong>
+                    ${result.facility_name || ""}
+                    </p>
+
+                    <p><strong>LGA:</strong>
+                    ${result.lga || ""}
+                    </p>
+
+                    <p><strong>Message:</strong>
+                    ${result.message || ""}
+                    </p>
+
+                    <div class="qr-section">
+                        <img src="${qrUrl}" alt="QR Code" />
+
+                        <div>
+                            <strong>
+                                Scan QR code to verify this license online.
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        EdoHERMA ComplianceWatch Public Verification Certificate
+                    </div>
+                </div>
+
+                <script>
+                    window.onload = function () {
+                        window.print();
+                    };
+                </script>
+            </body>
+        </html>
+        `);
+
+        printWindow.document.close();
+    }
+
     return (
         <div style={styles.page}>
             <div style={styles.card}>
-                <div style={styles.badge}>Public Verification</div>
-                <h1 style={styles.title}>Verify Professional License</h1>
+                <div style={styles.badge}>
+                    Public Verification
+                </div>
+
+                <h1 style={styles.title}>
+                    Verify Professional License
+                </h1>
+
                 <p style={styles.subtitle}>
-                    Search by license number to confirm personnel compliance status.
+                    Search by license number to confirm personnel compliance
+                    status.
                 </p>
 
                 <form onSubmit={verifyLicense} style={styles.form}>
                     <input
                         style={styles.input}
                         value={licenseNumber}
-                        onChange={(e) => setLicenseNumber(e.target.value)}
+                        onChange={(e) =>
+                            setLicenseNumber(e.target.value)
+                        }
                         placeholder="Enter license number e.g. MDCN-1001"
                     />
-                    <button style={styles.button} disabled={loading}>
+
+                    <button
+                        type="submit"
+                        style={styles.button}
+                        disabled={loading}
+                    >
                         {loading ? "Verifying..." : "Verify License"}
                     </button>
                 </form>
 
-                {error && <div style={styles.error}>{error}</div>}
+                {error && (
+                    <div style={styles.error}>
+                        {error}
+                    </div>
+                )}
 
                 {result && (
-                    <div className="print-area" style={styles.resultCard}>
-                        <h2 style={styles.resultTitle}>License Verified</h2>
+                    <div style={styles.resultCard}>
+                        <h2 style={styles.resultTitle}>
+                            License Verified
+                        </h2>
 
-                        <p><strong>Name:</strong> {result.full_name}</p>
-                        <p><strong>Profession:</strong> {result.profession}</p>
-                        <p><strong>License No:</strong> {result.license_number}</p>
-                        <p><strong>Regulatory Body:</strong> {result.regulatory_body}</p>
-                        <p><strong>Status:</strong> {result.status}</p>
-                        <p><strong>Expiry Date:</strong> {result.license_expiry_date}</p>
-                        <p><strong>Facility:</strong> {result.facility_name}</p>
-                        <p><strong>LGA:</strong> {result.lga}</p>
-                        <p><strong>Message:</strong> {result.message}</p>
+                        <p>
+                            <strong>Name:</strong> {result.full_name}
+                        </p>
+
+                        <p>
+                            <strong>Profession:</strong>{" "}
+                            {result.profession}
+                        </p>
+
+                        <p>
+                            <strong>License No:</strong>{" "}
+                            {result.license_number}
+                        </p>
+
+                        <p>
+                            <strong>Regulatory Body:</strong>{" "}
+                            {result.regulatory_body}
+                        </p>
+
+                        <p>
+                            <strong>Status:</strong>{" "}
+                            {result.status}
+                        </p>
+
+                        <p>
+                            <strong>Expiry Date:</strong>{" "}
+                            {result.license_expiry_date}
+                        </p>
+
+                        <p>
+                            <strong>Facility:</strong>{" "}
+                            {result.facility_name || ""}
+                        </p>
+
+                        <p>
+                            <strong>LGA:</strong>{" "}
+                            {result.lga || ""}
+                        </p>
+
+                        <p>
+                            <strong>Message:</strong>{" "}
+                            {result.message}
+                        </p>
 
                         <div style={styles.qrBox}>
                             <QRCodeCanvas
@@ -96,19 +289,22 @@ export default function PublicVerifyPage({ onBack }) {
                         </div>
                     </div>
                 )}
-                {isVerified && (
+
+                <div style={styles.actionButtons}>
                     <button
-                        className="no-print"
                         style={styles.printButton}
                         onClick={handlePrint}
                     >
                         Print Verification Certificate
                     </button>
-                )}
 
-                <button className="no-print" style={styles.backButton} onClick={onBack}>
-                    Back to Login
-                </button>
+                    <button
+                        style={styles.backButton}
+                        onClick={onBack}
+                    >
+                        Back to Login
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -200,13 +396,12 @@ const styles = {
 
     resultCard: {
         marginTop: 24,
-        padding: "clamp(18px, 4vw, 22px)",
+        padding: "22px",
         borderRadius: 18,
         background: "#F8FAFC",
         border: "1px solid #E2E8F0",
         color: "#334155",
         lineHeight: 1.7,
-        overflowWrap: "break-word",
     },
 
     resultTitle: {
@@ -215,16 +410,15 @@ const styles = {
     },
 
     qrBox: {
-        marginTop: 20,
-        padding: 16,
-        borderRadius: 16,
+        marginTop: 18,
+        padding: 14,
+        borderRadius: 14,
         background: "#FFFFFF",
         border: "1px solid #E5E7EB",
         display: "flex",
         alignItems: "center",
-        gap: 16,
+        gap: 14,
         flexWrap: "wrap",
-        overflow: "hidden",
     },
 
     qrText: {
@@ -234,9 +428,14 @@ const styles = {
         fontWeight: 600,
     },
 
+    actionButtons: {
+        marginTop: 24,
+        display: "flex",
+        gap: 12,
+        flexWrap: "wrap",
+    },
+
     printButton: {
-        marginTop: 20,
-        marginRight: 10,
         background: "#166534",
         color: "#FFFFFF",
         border: "none",
@@ -248,7 +447,6 @@ const styles = {
     },
 
     backButton: {
-        marginTop: 20,
         background: "#FFFFFF",
         border: "1px solid #CBD5E1",
         borderRadius: 14,
