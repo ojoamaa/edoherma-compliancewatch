@@ -41,6 +41,10 @@ export default function PublicVerifyPage({ onBack, initialLicenseNumber }) {
             return;
         }
 
+        const verifyUrl = result
+            ? `${window.location.origin}/verify/${result.license_number}`
+            : "";
+
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
             verifyUrl
         )}`;
