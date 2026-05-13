@@ -3,14 +3,14 @@ import { QRCodeCanvas } from "qrcode.react";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
-export default function PublicVerifyPage({ onBack }) {
-    const [licenseNumber, setLicenseNumber] = useState("MDCN-1001");
+export default function PublicVerifyPage({ onBack, initialLicenseNumber }) {
+    const [licenseNumber, setLicenseNumber] = useState(initialLicenseNumber || "MDCN-1001");
     const [result, setResult] = useState(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
     const verifyUrl = result
-        ? `${window.location.origin}/?verify=${result.license_number}`
+        ? `${window.location.origin}/verify/${result.license_number}`
         : "";
 
     async function verifyLicense(e) {

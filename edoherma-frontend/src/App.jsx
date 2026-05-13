@@ -77,6 +77,22 @@ export default function App() {
         };
     }, [token, userType]);
 
+    const path = window.location.pathname;
+
+    if (path.startsWith("/verify/")) {
+        const licenseFromUrl = decodeURIComponent(path.replace("/verify/", ""));
+
+        return (
+            <PublicVerifyPage
+                initialLicenseNumber={licenseFromUrl}
+                onBack={() => {
+                    window.history.pushState({}, "", "/");
+                    window.location.reload();
+                }}
+            />
+        );
+    }
+
     const handleLoginSuccess = (accessToken, _userProfile, loginType) => {
         localStorage.setItem(TOKEN_KEY, accessToken);
         localStorage.setItem(USER_TYPE_KEY, loginType);
