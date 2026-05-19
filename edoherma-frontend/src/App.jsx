@@ -93,30 +93,44 @@ export default function App() {
         );
     }
 
-    const handleLoginSuccess = (accessToken, _userProfile, loginType) => {
-        localStorage.setItem(TOKEN_KEY, accessToken);
-        localStorage.setItem(USER_TYPE_KEY, loginType);
-        setToken(accessToken);
-        setUserType(loginType)
-            ;
-        setProfile(loginType === "admin"
+    const handleLoginSuccess = (
+    accessToken,
+    refreshToken,
+    _userProfile,
+    loginType
+) => {
+    localStorage.setItem(TOKEN_KEY, accessToken);
+    localStorage.setItem("refresh_token", refreshToken);
+    localStorage.setItem(USER_TYPE_KEY, loginType);
+
+    setToken(accessToken);
+    setUserType(loginType);
+
+    setProfile(
+        loginType === "admin"
             ? { full_name: "Administrator" }
-            : null);
+            : null
+    );
 
-        setCheckingAuth(loginType !== "admin");
+    setCheckingAuth(loginType !== "admin");
+
+    if (loginType === "admin") {
         setPage("dashboard");
-    };
+    }
+};
 
-    const handleLogout = () => {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_TYPE_KEY);
+const handleLogout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem(USER_TYPE_KEY);
 
-        setToken("");
-        setUserType("");
-        setProfile(null);
-        setCheckingAuth(false);
-        setPage("login");
-    };
+    setToken("");
+    setUserType("");
+    setProfile(null);
+    setCheckingAuth(false);
+
+    setPage("login");
+};
 
     if (checkingAuth) {
         return (
@@ -142,7 +156,7 @@ export default function App() {
         );
     }
 
-    if (!token || !profile || !userType) {
+    if (!token || !userType) {
         return (
             <LoginPage
                 onLoginSuccess={handleLoginSuccess}
@@ -162,20 +176,36 @@ export default function App() {
     }
 
     if (userType === "personnel") {
+    if (!profile) {
         return (
-            <PersonnelPage
-                personnel={profile}
-                onLogout={handleLogout}
-            />
+            <div style={styles.loadingWrap}>
+                <div style={styles.loadingCard}>
+                    <div style={styles.loadingPill}>
+                        EdoHERMA ComplianceWatch
+                    </div>
+                    <h2 style={styles.loadingTitle}>
+                        Loading personnel profile...
+                    </h2>
+                </div>
+            </div>
         );
     }
 
     return (
-        <LoginPage
-            onLoginSuccess={handleLoginSuccess}
-            onOpenVerify={() => setPage("verify")}
+        <PersonnelPage
+            personnel={profile}
+            token={token}
+            onLogout={handleLogout}
         />
     );
+}
+
+return (
+    <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onOpenVerify={() => setPage("verify")}
+    />
+);
 }
 
 const styles = {

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API_BASE = "https://edoherma-compliancewatch-1-s9p4.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 const theme = {
     bg: "#F3F6FB",
     card: "#FFFFFF",
@@ -110,21 +110,22 @@ export default function LoginPage({ onLoginSuccess, onOpenVerify }) {
                 throw new Error(message || "Login failed");
             }
 
-            const loginData = await loginResponse.json();
-            const accessToken = loginData.access_token;
+const loginData = await loginResponse.json();
+console.log("LOGIN DATA:", loginData);
+console.log("LOGIN TYPE:", loginType);
 
-            if (!accessToken) {
-                throw new Error("No access token returned from server");
-            }
+const accessToken = loginData.access_token;
 
-            onLoginSuccess(
-                accessToken,
-                {
-                    email: email.trim(),
-                    role: loginType,
-                },
-                loginType
-            );
+if (!accessToken) {
+    throw new Error("No access token returned from server");
+}
+
+onLoginSuccess(
+    loginData.access_token,
+    loginData.refresh_token,
+    loginData.user || null,
+    loginType
+);
         } catch (err) {
             console.error("Login error:", err);
             setError(err?.message || "Unable to sign in");
