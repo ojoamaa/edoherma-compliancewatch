@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "change_this_secret"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 30
 
     database_url: str
 
