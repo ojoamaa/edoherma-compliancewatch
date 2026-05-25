@@ -14,13 +14,13 @@ const theme = {
 };
 
 const DEFAULT_ADMIN = {
-    email: "admin@edoherma.com",
-    password: "Admin@12345",
+    email: "",
+    password: "",
 };
 
 const DEFAULT_PERSONNEL = {
-    email: "osagie@edoherma.com",
-    password: "password123",
+    email: "",
+    password: "",
 };
 export default function LoginPage({ onLoginSuccess, onOpenVerify }) {
     const [loginType, setLoginType] = useState("admin");
