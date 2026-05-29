@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from app.seeds.create_personnel import create_default_personnel
 from app.api import public_verify
 
 from app.api import (
@@ -16,7 +15,6 @@ from app.api import (
     reminder,
 )
 from app.core.database import Base, SessionLocal, engine
-from app.core.init_admin import create_default_admin
 from app.core.config import settings
 
 import app.models  # noqa: F401
@@ -48,15 +46,7 @@ app.add_middleware(
         "Accept",
     ],
 )
-Base.metadata.create_all(bind=engine)
 
-create_default_personnel()
-
-db: Session = SessionLocal()
-try:
-    create_default_admin(db)
-finally:
-    db.close()
 
 app.include_router(health.router)
 app.include_router(dashboard.router)
