@@ -6,7 +6,10 @@ import PublicVerifyPage from "./PublicVerifyPage";
 
 const TOKEN_KEY = "edoherma_token";
 const USER_TYPE_KEY = "edoherma_user_type";
-const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+const API_BASE =
+    import.meta.env.VITE_API_BASE_URL ||
+    import.meta.env.VITE_API_BASE ||
+    "http://127.0.0.1:8000";
 
 export default function App() {
     const [page, setPage] = useState("login");

@@ -25,7 +25,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-from fastapi.middleware.cors import CORSMiddleware
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
