@@ -495,7 +495,9 @@ export default function DashboardPage({ token, admin, onLogout }) {
                                 Welcome, {admin?.full_name || "Administrator"}.
                             </p>
                         </div>
-
+                        <div style={styles.resultSummary}>
+                            Personnel Found: {allFilteredPersonnel.length} | Facilities Found: {allFilteredFacilities.length}
+                        </div>
                         <div style={styles.headerButtons}>
                             <button style={styles.secondaryButton} onClick={exportJson}>
                                 Export JSON
@@ -579,40 +581,49 @@ export default function DashboardPage({ token, admin, onLogout }) {
                         </div>
 
                         <div style={styles.actionCol}>
-                            <button
-                                style={styles.primaryButton}
-                                onClick={() => setAppliedSearch(search)}
-                            >
-                                Search
-                            </button>
-                            <button
-                                style={styles.secondaryButton}
-                                onClick={() => {
-                                    setSearch("");
-                                    setAppliedSearch("");
-                                    setPersonnelFilter("all");
-                                    setFacilityFilter("all");
-                                    setStatusFilter("all");
-                                }}
-                            >
-                                Clear
-                            </button>
-                        </div>
+                        <button
+                         style={styles.primaryButton}
+                         onClick={() => setAppliedSearch(search)}
+                           >
+                             Search
+                           </button>
+
+                          <button
+                        style={styles.secondaryButton}
+                            onClick={() => {
+                               setSearch("");
+                               setAppliedSearch("");
+                               setPersonnelFilter("all");
+                               setFacilityFilter("all");
+                               setStatusFilter("all");
+                       }}
+                  >
+                       Clear
+                   </button>
+               </div>
                     </div>
                 </div>
 
                 <div style={styles.metricsGrid}>
-                    <MetricCard title="Total Facilities" value={summary.total_facilities} />
-                    <MetricCard title="Active Facilities" value={summary.active_facilities} tone="success" />
-                    <MetricCard title="Expired Facilities" value={summary.expired_facilities} tone="danger" />
-                    <MetricCard title="Expiring Facilities" value={summary.expiring_facilities} tone="warning" />
+                   <MetricCard title="Total Facilities" value={allFilteredFacilities.length} />
+                   <MetricCard
+                    title="Active Facilities"
+                   value={allFilteredFacilities.filter((x) => x.status?.toLowerCase() === "active").length}
+                   tone="success"
+                   />
+                   <MetricCard title="Expired Facilities" value={expiredFacilities.length} tone="danger" />
+                   <MetricCard title="Expiring Facilities" value={expiringFacilities.length} tone="warning" />
                 </div>
 
                 <div style={styles.metricsGrid}>
-                    <MetricCard title="Total Personnel" value={summary.total_personnel} />
-                    <MetricCard title="Active Personnel" value={summary.active_personnel} tone="success" />
-                    <MetricCard title="Expired Personnel" value={summary.expired_personnel} tone="danger" />
-                    <MetricCard title="Expiring Personnel" value={summary.expiring_personnel} tone="warning" />
+                    <MetricCard title="Total Personnel" value={allFilteredPersonnel.length} />
+                    <MetricCard
+                     title="Active Personnel"
+                    value={allFilteredPersonnel.filter((x) => x.status?.toLowerCase() === "active").length}
+                    tone="success"
+                    />
+                    <MetricCard title="Expired Personnel" value={expiredPersonnel.length} tone="danger" />
+                    <MetricCard title="Expiring Personnel" value={expiringPersonnel.length} tone="warning" />
                 </div>
 
                 <div style={styles.twoColGrid}>
@@ -731,42 +742,42 @@ export default function DashboardPage({ token, admin, onLogout }) {
                 </div>
 
                 <div style={styles.tablesGrid}>
-                    <SectionTable
-                        title="All Personnel Search Results"
-                        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
-                        rows={personnelRows}
-                        emptyMessage="No personnel matched the current search or filter."
-                    />
+    <SectionTable
+        title="All Personnel Search Results"
+        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
+        rows={personnelRows}
+        emptyMessage="No personnel matched the current search or filter."
+    />
 
-                    <SectionTable
-                        title="All Facilities Search Results"
-                        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
-                        rows={facilityRows}
-                        emptyMessage="No facilities matched the current search or filter."
-                    />
+    <SectionTable
+        title="All Facilities Search Results"
+        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
+        rows={facilityRows}
+        emptyMessage="No facilities matched the current search or filter."
+    />
 
-                    <SectionTable
-                        title="Expired Personnel"
-                        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
-                        rows={expiredPersonnelRows}
-                        emptyMessage="No expired personnel records found."
-                    />
+    <SectionTable
+        title="Expired Personnel"
+        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
+        rows={expiredPersonnelRows}
+        emptyMessage="No expired personnel records found."
+    />
 
-                    <SectionTable
-                        title="Expiring Personnel"
-                        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
-                        rows={expiringPersonnelRows}
-                        emptyMessage="No personnel licenses are nearing expiry."
-                    />
+    <SectionTable
+        title="Expiring Personnel"
+        columns={["Name", "Profession", "License No.", "Expiry Date", "Status"]}
+        rows={expiringPersonnelRows}
+        emptyMessage="No personnel licenses are nearing expiry."
+    />
 
-                    <SectionTable
-                        title="Expired Facilities"
-                        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
-                        rows={expiredFacilityRows}
-                        emptyMessage="No expired facilities found."
-                    />
+    <SectionTable
+        title="Expired Facilities"
+        columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
+        rows={expiredFacilityRows}
+        emptyMessage="No expired facilities found."
+    />
 
-                    <SectionTable
+    <SectionTable
                         title="Expiring Facilities"
                         columns={["Facility", "Type", "LGA", "License No.", "Expiry Date", "Status"]}
                         rows={expiringFacilityRows}
@@ -827,6 +838,14 @@ const styles = {
         color: theme.muted,
         lineHeight: 1.45,
     },
+
+    resultSummary: {
+      marginTop: "8px",
+      color: theme.muted,
+      fontSize: "14px",
+      fontWeight: 700,
+    },
+
     headerButtons: {
         display: "flex",
         gap: "10px",
