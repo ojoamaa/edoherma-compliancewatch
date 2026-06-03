@@ -21,6 +21,27 @@ const theme = {
     dangerText: "#991B1B",
 };
 
+const EDO_LGAS = [
+  "Akoko-Edo",
+  "Egor",
+  "Esan Central",
+  "Esan North-East",
+  "Esan South-East",
+  "Esan West",
+  "Etsako Central",
+  "Etsako East",
+  "Etsako West",
+  "Igueben",
+  "Ikpoba-Okha",
+  "Oredo",
+  "Orhionmwon",
+  "Ovia North-East",
+  "Ovia South-West",
+  "Owan East",
+  "Owan West",
+  "Uhunmwonde",
+];
+
 const cardStyle = {
     background: theme.card,
     border: `1px solid ${theme.border}`,
@@ -252,11 +273,7 @@ export default function DashboardPage({ token, admin, onLogout }) {
         );
     }, [allPersonnel]);
 
-    const lgaOptions = useMemo(() => {
-        return Array.from(new Set(allFacilities.map((item) => item.lga).filter(Boolean))).sort(
-            (a, b) => a.localeCompare(b)
-        );
-    }, [allFacilities]);
+    const lgaOptions = EDO_LGAS;
 
     const filterPersonnel = (items = []) =>
         items.filter((item) => {
