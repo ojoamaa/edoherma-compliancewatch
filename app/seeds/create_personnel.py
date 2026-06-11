@@ -35,3 +35,6 @@ def create_default_personnel():
     db.close()
 
     print("Default personnel created")
+
+    if __name__ == "__main__":
+     create_default_personnel()
