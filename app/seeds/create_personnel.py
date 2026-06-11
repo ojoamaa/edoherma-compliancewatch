@@ -36,5 +36,6 @@ def create_default_personnel():
 
     print("Default personnel created")
 
-    if __name__ == "__main__":
-     create_default_personnel()
+
+if __name__ == "__main__":
+    create_default_personnel()
